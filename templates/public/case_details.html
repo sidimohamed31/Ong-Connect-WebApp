@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row g-5">
+    <!-- Main Content: Case Details -->
+    <div class="col-lg-8">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('public_dashboard') }}">{{ t.home }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ case.titre }}</li>
+            </ol>
+        </nav>
+
+        <h1 class="display-5 fw-bold mb-3">{{ case.titre }}</h1>
+        <div class="d-flex align-items-center gap-3 mb-4 text-muted">
+            <span><i class="bi bi-calendar-event me-1"></i> {{ case.date_publication }}</span>
+            <span><i class="bi bi-geo-alt me-1"></i> {{ case.adresse }}</span>
+            <span
+                class="badge {% if case.statut == 'Résolu' %}bg-success{% elif case.statut == 'Urgent' %}bg-danger{% else %}bg-primary{% endif %}">
+                {{ t.get(case.statut, case.statut) }}
+            </span>
+        </div>
+
+        <!-- Media Gallery -->
+        {% if media_list %}
+        <div id="mediaCarousel" class="carousel slide mb-5 shadow rounded overflow-hidden" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                {% for media in media_list %}
+                <div class="carousel-item {% if loop.first %}active{% endif %}">
+                    {% if media.file_url.endswith(('.mp4', '.mov', '.avi')) %}
+                    <video controls class="d-block w-100"
+                        style="max-height: 500px; object-fit: contain; background: #000;">
+                        <source src="{{ url_for('static', filename=media.file_url) }}">
+                        Your browser does not support the video tag.
+                    </video>
+                    {% else %}
+                    <img src="{{ url_for('static', filename=media.file_url) }}" class="d-block w-100" alt="Case Media"
+                        style="max-height: 500px; object-fit: contain; background: #f8f9fa;">
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% if media_list|length > 1 %}
+            <button class="carousel-control-prev" type="button" data-bs-target="#mediaCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#mediaCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+            {% endif %}
+        </div>
+        {% elif case.logo_url %} <!-- Fallback to ONG logo if no media -->
+        <div class="text-center mb-5 bg-light py-5 rounded">
+            <img src="{{ url_for('static', filename=case.logo_url) }}" class="img-fluid rounded-circle"
+                style="width: 150px; height: 150px; object-fit: cover;">
+        </div>
+        {% endif %}
+
+        <div class="mb-5">
+            <h3 class="fw-bold border-bottom pb-2 mb-3">{{ t.description }}</h3>
+            <p class="lead" style="white-space: pre-line;">{{ case.description }}</p>
+        </div>
+
+    </div>
+
+    <!-- Sidebar: ONG Info -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 sticky-top" style="top: 100px;">
+            <div class="card-body p-4 text-center">
+                {% if case.logo_url %}
+                <img src="{{ url_for('static', filename=case.logo_url) }}" alt="{{ case.nom_ong }}"
+                    class="img-fluid rounded-circle shadow mb-3"
+                    style="width: 100px; height: 100px; object-fit: cover;">
+                {% else %}
+                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-3 shadow"
+                    style="width: 100px; height: 100px;">
+                    <i class="bi bi-building fs-1 text-white"></i>
+                </div>
+                {% endif %}
+
+                <h4 class="fw-bold mb-1">{{ case.nom_ong }}</h4>
+                <p class="text-muted small mb-4">{{ t.get(case.domaine_intervation, case.domaine_intervation) }}</p>
+
+                <hr>
+
+                <div class="text-start">
+                    <p class="mb-2"><i class="bi bi-envelope text-primary me-2"></i> {{ case.ong_email }}</p>
+                    <p class="mb-2"><i class="bi bi-telephone text-primary me-2"></i> {{ case.ong_phone }}</p>
+                    <p class="mb-0"><i class="bi bi-geo-alt text-primary me-2"></i> {{ case.ong_address }}</p>
+                </div>
+
+                <hr>
+
+                <!-- Actions -->
+                <div class="d-grid gap-2">
+                    {% if session.get('user_type') == 'admin' %}
+                    <a href="{{ url_for('edit_case', id=case.id_cas_social) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-pencil-square"></i> {{ t.edit }}
+                    </a>
+                    <form action="{{ url_for('delete_case', id=case.id_cas_social) }}" method="POST"
+                        onsubmit="return confirm('{{ t.confirm_delete }}')">
+                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                            <i class="bi bi-trash"></i> {{ t.delete }}
+                        </button>
+                    </form>
+                    {% else %}
+                    <button class="btn btn-outline-primary btn-sm"
+                        onclick="openPasswordModal('{{ url_for('edit_case', id=case.id_cas_social) }}', 'edit', '{{ case.id_ong }}')">
+                        <i class="bi bi-pencil-square"></i> {{ t.edit }}
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm"
+                        onclick="openPasswordModal('{{ url_for('delete_case', id=case.id_cas_social) }}', 'delete', '{{ case.id_ong }}')">
+                        <i class="bi bi-trash"></i> {{ t.delete }}
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

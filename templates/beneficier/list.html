@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-primary mb-1">{{ t.beneficiaries }}</h2>
+            <p class="text-muted mb-0">{{ t.beneficiary_subtitle }}</p>
+        </div>
+        <a href="{{ url_for('add_beneficiary') }}" class="btn btn-primary px-4 shadow-sm">
+            <i class="bi bi-plus-lg me-2"></i>{{ t.add_new }}
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-primary text-white h-100">
+                <div class="card-body p-4 d-flex align-items-center">
+                    <div class="bg-white bg-opacity-25 rounded-circle p-3 me-3">
+                        <i class="bi bi-people-fill fs-3"></i>
+                    </div>
+                    <div>
+                        <h3 id="total-beneficiaries-count" class="fw-bold mb-0">0</h3>
+                        <p class="mb-0 opacity-75">{{ t.total_beneficiaries if t.total_beneficiaries else 'Total
+                            Bénéficiaires' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm rounded-4 bg-white h-100">
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-filter me-2"></i>{{ t.filters }}</h6>
+                            <div class="mb-2">
+                                <select id="filter-ong" class="form-select bg-light border-0 form-select-sm">
+                                    <option value="">{{ t.all }} (ONG)</option>
+                                    {% for ong in filter_ongs %}
+                                    <option value="{{ ong.id_ong }}">{{ ong.nom_ong }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <select id="filter-category" class="form-select bg-light border-0 form-select-sm">
+                                    <option value="">{{ t.all }} ({{ t.categories }})</option>
+                                    {% for cat in filter_categories %}
+                                    <option value="{{ cat }}">{{ cat }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-0">
+                                <select id="filter-location" class="form-select bg-light border-0 form-select-sm">
+                                    <option value="">{{ t.all }} ({{ t.address }})</option>
+                                    {% for loc in filter_locations %}
+                                    <option value="{{ loc }}">{{ loc }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-8 text-end">
+                            <p class="text-muted small mb-0">{{ t.filters_desc }}</p>
+                            <button id="reset-filters" class="btn btn-link btn-sm text-decoration-none p-0 mt-1">{{
+                                t.reset_filters_long }}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-bar-chart-fill text-primary me-2"></i>{{ t.by_ong }}</h6>
+                </div>
+                <div class="card-body p-4">
+                    <canvas id="ongChart" style="min-height: 350px;"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-pie-chart-fill text-success me-2"></i>{{ t.by_category }}
+                    </h6>
+                </div>
+                <div class="card-body p-4 d-flex justify-content-center align-items-center">
+                    <div style="width: 100%; max-width: 300px;">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const ongCtx = document.getElementById('ongChart').getContext('2d');
+        const catCtx = document.getElementById('categoryChart').getContext('2d');
+
+        let ongChart, categoryChart;
+
+        const filters = {
+            ong: document.getElementById('filter-ong'),
+            category: document.getElementById('filter-category'),
+            location: document.getElementById('filter-location')
+        };
+
+        function updateStats() {
+            const params = new URLSearchParams();
+            if (filters.ong.value) params.append('ong_id', filters.ong.value);
+            if (filters.category.value) params.append('category', filters.category.value);
+            if (filters.location.value) params.append('location', filters.location.value);
+
+            fetch(`/api/stats/beneficiaries?${params.toString()}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Update Total Counter
+                    animateValue("total-beneficiaries-count", parseInt(document.getElementById('total-beneficiaries-count').innerText) || 0, data.total, 500);
+
+                    // Update Charts
+                    renderOngChart(data.by_ong);
+                    renderCategoryChart(data.by_category);
+                });
+        }
+
+        function renderOngChart(data) {
+            const labels = data.map(item => item.label);
+            const values = data.map(item => item.value);
+
+            if (ongChart) {
+                ongChart.data.labels = labels;
+                ongChart.data.datasets[0].data = values;
+                ongChart.update();
+            } else {
+                ongChart = new Chart(ongCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '{{ t.beneficiaries }}',
+                            data: values,
+                            backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { backgroundColor: '#1e293b' }
+                        },
+                        scales: {
+                            x: { beginAtZero: true, grid: { borderDash: [5, 5] } },
+                            y: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+        }
+
+        function renderCategoryChart(data) {
+            const labels = data.map(item => item.label);
+            const values = data.map(item => item.value);
+
+            if (categoryChart) {
+                categoryChart.data.labels = labels;
+                categoryChart.data.datasets[0].data = values;
+                categoryChart.update();
+            } else {
+                categoryChart = new Chart(catCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: [
+                                '#0d6efd', '#198754', '#ffc107', '#dc3545', '#0dcaf0', '#6610f2', '#f97316'
+                            ],
+                            borderWidth: 0,
+                            hoverOffset: 15
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true } }
+                        },
+                        cutout: '75%'
+                    }
+                });
+            }
+        }
+
+        function animateValue(id, start, end, duration) {
+            if (start === end) return;
+            const obj = document.getElementById(id);
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start);
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // Initial load
+        updateStats();
+
+        // Event listeners
+        Object.values(filters).forEach(f => f.addEventListener('change', updateStats));
+        document.getElementById('reset-filters').addEventListener('click', () => {
+            Object.values(filters).forEach(f => f.value = '');
+            updateStats();
+        });
+    });
+</script>
+{% endblock %}

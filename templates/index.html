@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="hero-bg-pattern"></div>
+    <div class="hero-content d-flex justify-content-between align-items-center flex-wrap gap-4">
+        <div>
+            <h1 class="hero-title">{{ t.title }}</h1>
+            <p class="hero-subtitle mb-0">{{ t.welcome }}</p>
+        </div>
+        <div>
+            <span
+                class="badge bg-white text-primary bg-opacity-10 fs-6 px-3 py-2 rounded-pill border border-white border-opacity-25">
+                <i class="bi bi-calendar-event me-2"></i> {{ t.dashboard }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Grid -->
+<div class="row g-4 mb-5">
+    <!-- NGOs Card -->
+    <div class="col-md-4">
+        <a href="{{ url_for('list_ngos') }}" class="text-decoration-none">
+            <div class="modern-stat-card stat-success">
+                <div class="stat-top">
+                    <div class="stat-icon-wrapper">
+                        <i class="bi bi-building"></i>
+                    </div>
+                </div>
+                <div class="stat-bottom">
+                    <div class="stat-value">{{ counts.ngos }}</div>
+                    <div class="stat-label">{{ t.ngos }}</div>
+                    <div class="stat-link">
+                        {{ t.view_details }} <i class="bi bi-arrow-right list-inline-item"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Social Cases Card -->
+    <div class="col-md-4">
+        <a href="{{ url_for('list_cases') }}" class="text-decoration-none">
+            <div class="modern-stat-card stat-warning">
+                <div class="stat-top">
+                    <div class="stat-icon-wrapper">
+                        <i class="bi bi-heart"></i>
+                    </div>
+                </div>
+                <div class="stat-bottom">
+                    <div class="stat-value">{{ counts.cases }}</div>
+                    <div class="stat-label">{{ t.social_cases }}</div>
+                    <div class="stat-link">
+                        {{ t.view_details }} <i class="bi bi-arrow-right list-inline-item"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Beneficiaries Card -->
+    <div class="col-md-4">
+        <a href="{{ url_for('list_beneficiaries') }}" class="text-decoration-none">
+            <div class="modern-stat-card stat-info">
+                <div class="stat-top">
+                    <div class="stat-icon-wrapper">
+                        <i class="bi bi-people"></i>
+                    </div>
+                </div>
+                <div class="stat-bottom">
+                    <div class="stat-value">{{ counts.beneficiaries }}</div>
+                    <div class="stat-label">{{ t.beneficiaries }}</div>
+                    <div class="stat-link">
+                        {{ t.view_details }} <i class="bi bi-arrow-right list-inline-item"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Quick Actions (Optional, good for UX) -->
+<h4 class="fw-bold mb-3 text-muted px-1">{{ t.actions }}</h4>
+<div class="row g-3">
+    <div class="col-sm-6 col-lg-3">
+        <a href="{{ url_for('list_ngos') }}" class="quick-action-btn">
+            <i class="bi bi-list-ul quick-action-icon text-success"></i>
+            <span>{{ t.ngos }}</span>
+        </a>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <a href="{{ url_for('public_dashboard') }}" class="quick-action-btn">
+            <i class="bi bi-globe quick-action-icon text-primary"></i>
+            <span>{{ t.home }}</span>
+        </a>
+    </div>
+    <!-- Add more if there are more direct actions available to admins -->
+</div>
+
+{% endblock %}

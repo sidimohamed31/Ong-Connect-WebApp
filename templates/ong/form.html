@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-lg mb-4">
+            <div class="card-header bg-white py-3 border-0">
+                <h4 class="card-title fw-bold mb-0 text-primary"><i class="bi bi-building me-2"></i> {{ t.add_new if
+                    action == 'add' else t.edit }} - {{ t.ngos }}</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label for="nom_ong" class="form-label">{{ t.name }}</label>
+                        <input type="text" class="form-control form-control-lg" id="nom_ong" name="nom_ong"
+                            value="{{ ong.nom_ong if ong else '' }}" required placeholder="{{ t.name }}...">
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="logo" class="form-label">Logo <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control" id="logo" name="logo" accept="image/*" {% if
+                            action=='add' %}required{% endif %}>
+                        {% if ong and ong.logo_url %}
+                        <div class="mt-2">
+                            <img src="{{ url_for('static', filename=ong.logo_url) }}" alt="Logo"
+                                class="rounded-circle shadow-sm" style="width: 50px; height: 50px; object-fit: cover;">
+                            <small class="text-muted ms-2">{{ t.current_logo if t.current_logo else 'Logo actuel'
+                                }}</small>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <label for="email" class="form-label">{{ t.email }}</label>
+                            <input type="email" class="form-control" id="email" name="email"
+                                value="{{ ong.email if ong else '' }}" required placeholder="ex: contact@ong.com">
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <label for="telephone" class="form-label">{{ t.phone }}</label>
+                            <input type="text" class="form-control" id="telephone" name="telephone"
+                                value="{{ ong.telephone if ong else '' }}" required placeholder="+222...">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="adresse" class="form-label">{{ t.address }}</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-geo-alt"></i></span>
+                            <input type="text" class="form-control" id="adresse" name="adresse"
+                                value="{{ ong.adresse if ong else '' }}" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-diagram-3 me-2 text-primary"></i>{{ t.domain }}
+                        </label>
+                        <div class="border rounded-3 p-3 bg-white shadow-sm">
+                            <div class="row g-2">
+                                {% for category in categories %}
+                                <div class="col-md-6">
+                                    <div class="domain-checkbox-wrapper">
+                                        <input class="form-check-input domain-checkbox" type="checkbox"
+                                            name="domaine_intervation" value="{{ category.nomCategorie }}"
+                                            id="domain_{{ loop.index }}" {% if ong and category.nomCategorie in
+                                            ong.domaine_intervation.split(',') %}checked{% endif %}>
+                                        <label class="form-check-label domain-label w-100"
+                                            for="domain_{{ loop.index }}">
+                                            <i class="bi bi-check-circle-fill me-2"></i>
+                                            <span>{{ t.get(category.nomCategorie, category.nomCategorie) }}</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <small class="form-text text-muted d-flex align-items-center mt-2">
+                            <i class="bi bi-info-circle me-1"></i>
+                            {{ t.select_domains }}
+                        </small>
+                    </div>
+
+                    <style>
+                        .domain-checkbox-wrapper {
+                            position: relative;
+                            margin-bottom: 0.5rem;
+                        }
+
+                        .domain-checkbox {
+                            position: absolute;
+                            opacity: 0;
+                            cursor: pointer;
+                        }
+
+                        .domain-label {
+                            display: flex;
+                            align-items: center;
+                            padding: 0.75rem 1rem;
+                            border: 2px solid #e9ecef;
+                            border-radius: 0.5rem;
+                            background: #f8f9fa;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            font-weight: 500;
+                        }
+
+                        .domain-label i {
+                            color: #dee2e6;
+                            transition: all 0.3s ease;
+                        }
+
+                        .domain-label:hover {
+                            border-color: #0d6efd;
+                            background: #e7f1ff;
+                            transform: translateY(-2px);
+                            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+                        }
+
+                        .domain-checkbox:checked+.domain-label {
+                            border-color: #0d6efd;
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+                        }
+
+                        .domain-checkbox:checked+.domain-label i {
+                            color: #fff;
+                            animation: checkBounce 0.3s ease;
+                        }
+
+                        @keyframes checkBounce {
+
+                            0%,
+                            100% {
+                                transform: scale(1);
+                            }
+
+                            50% {
+                                transform: scale(1.2);
+                            }
+                        }
+
+                        /* RTL Support */
+                        [dir="rtl"] .domain-label i {
+                            margin-right: 0;
+                            margin-left: 0.5rem;
+                        }
+                    </style>
+                    <div class="mb-4">
+                        <label for="mot_de_passe" class="form-label">{{ t.password }}</label>
+                        <input type="password" class="form-control" id="mot_de_passe" name="mot_de_passe"
+                            value="{{ ong.mot_de_passe if ong else '' }}" required>
+                    </div>
+                    <div class="d-flex justify-content-end gap-3 mt-5">
+                        <a href="{{ url_for('list_ngos') }}" class="btn btn-light px-4">{{ t.cancel }}</a>
+                        <button type="submit" class="btn btn-primary px-4 shadow-sm"><i class="bi bi-check-lg"></i> {{
+                            t.save }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

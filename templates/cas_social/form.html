@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-lg mb-4">
+            <div class="card-header bg-white py-3 border-0">
+                <h4 class="card-title fw-bold mb-0 text-primary"><i class="bi bi-heart me-2"></i> {{ t.add_new if action
+                    == 'add' else t.edit }} - {{ t.social_cases }}</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label for="titre" class="form-label">{{ t.title_field }}</label>
+                        <input type="text" class="form-control form-control-lg" id="titre" name="titre"
+                            value="{{ case.titre if case else '' }}" required placeholder="{{ t.title_field }}...">
+                    </div>
+                    <div class="mb-4">
+                        <label for="description" class="form-label">{{ t.description }}</label>
+                        <textarea class="form-control" id="description" name="description" rows="4"
+                            placeholder="{{ t.description }}...">{{ case.description if case else '' }}</textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label for="adresse" class="form-label">{{ t.address }}</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-geo-alt"></i></span>
+                            <input type="text" class="form-control" id="adresse" name="adresse"
+                                value="{{ case.adresse if case else '' }}">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <label for="date_publication" class="form-label">{{ t.date }}</label>
+                            <input type="date" class="form-control" id="date_publication" name="date_publication"
+                                value="{{ case.date_publication.strftime('%Y-%m-%d') if case and case.date_publication else '' }}"
+                                required>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <label for="statut" class="form-label">{{ t.status }}</label>
+                            <select class="form-select" id="statut" name="statut">
+                                <option value="En cours" {{ 'selected' if case and case.statut=='En cours' else '' }}>{{
+                                    t.get('En cours', 'En cours') }}</option>
+                                <option value="Résolu" {{ 'selected' if case and case.statut=='Résolu' else '' }}>{{
+                                    t.get('Résolu', 'Résolu') }}</option>
+                                <option value="Urgent" {{ 'selected' if case and case.statut=='Urgent' else '' }}>{{
+                                    t.get('Urgent', 'Urgent') }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="id_ong" class="form-label">{{ t.ngos }}</label>
+                        <select class="form-select" id="id_ong" name="id_ong">
+                            {% for ong in ngos %}
+                            <option value="{{ ong.id_ong }}" {{ 'selected' if case and case.id_ong==ong.id_ong else ''
+                                }}>{{ ong.nom_ong }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="media" class="form-label">{{ t.media }}</label>
+                        <input type="file" class="form-control" id="media" name="media" multiple
+                            accept="image/*,video/*">
+                        <div class="form-text">Allowed formats: Images, Videos.</div>
+                    </div>
+
+                    {% if action == 'edit' and media_list %}
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Attached Media</label>
+                        <div class="row g-3">
+                            {% for media in media_list %}
+                            <div class="col-6 col-md-3">
+                                <div class="card h-100 shadow-sm">
+                                    {% if media.file_url.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')) %}
+                                    <img src="{{ url_for('static', filename=media.file_url) }}" class="card-img-top"
+                                        alt="Media" style="height: 120px; object-fit: cover;">
+                                    {% else %}
+                                    <div class="card-body text-center d-flex align-items-center justify-content-center bg-light"
+                                        style="height: 120px;">
+                                        <i class="bi bi-file-earmark fs-3 text-muted"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div class="card-footer p-2 text-center bg-white border-top-0">
+                                        <div class="d-flex gap-2 justify-content-center">
+                                            <a href="{{ url_for('static', filename=media.file_url) }}" target="_blank"
+                                                class="btn btn-sm btn-outline-primary flex-grow-1">View</a>
+                                            <a href="{{ url_for('delete_media', id=media.id_media) }}"
+                                                class="btn btn-sm btn-outline-danger"
+                                                onclick="return confirm('{{ t.confirm_delete }}')">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="d-flex justify-content-end gap-3 mt-5">
+                        <a href="{{ url_for('list_cases') }}" class="btn btn-light px-4">{{ t.cancel }}</a>
+                        <button type="submit" class="btn btn-primary px-4 shadow-sm"><i class="bi bi-check-lg"></i> {{
+                            t.save }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

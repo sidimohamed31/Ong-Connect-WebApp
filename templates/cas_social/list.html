@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ t.social_cases }}</h2>
+    <a href="{{ url_for('add_case') }}" class="btn btn-success">{{ t.add_new }}</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th class="border-0 rounded-start ps-4">ID</th>
+                <th class="border-0">{{ t.title_field }}</th>
+                <th class="border-0">{{ t.description }}</th>
+                <th class="border-0">{{ t.address }}</th>
+                <th class="border-0">{{ t.date }}</th>
+                <th class="border-0">{{ t.status }}</th>
+                <th class="border-0 rounded-end text-end pe-4">{{ t.actions }}</th>
+            </tr>
+        </thead>
+        <tbody class="border-top-0">
+            {% for case in cases %}
+            <tr class="shadow-sm">
+                <td class="ps-4 fw-bold text-muted">#{{ case.id_cas_social }}</td>
+                <td class="fw-bold text-dark">{{ case.titre }}</td>
+                <td class="text-muted small">{{ case.description[:50] }}...</td>
+                <td><i class="bi bi-geo-alt text-muted me-1"></i> {{ case.adresse }}</td>
+                <td>{{ case.date_publication.strftime('%Y-%m-%d') if case.date_publication else '' }}</td>
+                <td>
+                    <select class="form-select form-select-sm status-dropdown" data-case-id="{{ case.id_cas_social }}"
+                        style="width: auto; min-width: 120px;">
+                        <option value="En cours" {% if case.statut=='En cours' %}selected{% endif %}>
+                            {{ t.get('En cours', 'En cours') }}
+                        </option>
+                        <option value="Résolu" {% if case.statut=='Résolu' %}selected{% endif %}>
+                            {{ t.get('Résolu', 'Résolu') }}
+                        </option>
+                        <option value="Urgent" {% if case.statut=='Urgent' %}selected{% endif %}>
+                            {{ t.get('Urgent', 'Urgent') }}
+                        </option>
+                    </select>
+                </td>
+                <td class="text-end pe-4">
+                    <a href="{{ url_for('public_case_details', id=case.id_cas_social) }}"
+                        class="btn btn-sm btn-light text-info rounded-circle" data-bs-toggle="tooltip"
+                        title="{{ t.view_details }}"><i class="bi bi-eye"></i></a>
+                <td class="text-end pe-4">
+                    <a href="{{ url_for('public_case_details', id=case.id_cas_social) }}"
+                        class="btn btn-sm btn-light text-info rounded-circle" data-bs-toggle="tooltip"
+                        title="{{ t.view_details }}"><i class="bi bi-eye"></i></a>
+
+                    {% if session.get('user_type') == 'admin' %}
+                    <a href="{{ url_for('edit_case', id=case.id_cas_social) }}"
+                        class="btn btn-sm btn-light text-primary rounded-circle" data-bs-toggle="tooltip"
+                        title="{{ t.edit }}"><i class="bi bi-pencil-square"></i></a>
+
+                    <form action="{{ url_for('delete_case', id=case.id_cas_social) }}" method="POST" class="d-inline"
+                        onsubmit="return confirm('{{ t.confirm_delete }}')">
+                        <button type="submit" class="btn btn-sm btn-light text-danger rounded-circle"
+                            data-bs-toggle="tooltip" title="{{ t.delete }}"><i class="bi bi-trash"></i></button>
+                    </form>
+                    {% else %}
+                    <!-- Public/ONG Actions -->
+                    <button
+                        onclick="openPasswordModal('{{ url_for('edit_case', id=case.id_cas_social) }}', 'edit', '{{ case.id_ong }}')"
+                        class="btn btn-sm btn-light text-primary rounded-circle" data-bs-toggle="tooltip"
+                        title="{{ t.edit }}"><i class="bi bi-pencil-square"></i></button>
+
+                    <button
+                        onclick="openPasswordModal('{{ url_for('delete_case', id=case.id_cas_social) }}', 'delete', '{{ case.id_ong }}')"
+                        class="btn btn-sm btn-light text-danger rounded-circle" data-bs-toggle="tooltip"
+                        title="{{ t.delete }}"><i class="bi bi-trash"></i></button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox fs-1 d-block mb-3 opacity-25"></i>
+                    {{ t.no_records }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

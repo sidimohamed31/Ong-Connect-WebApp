@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-5">
+    <div class="col-md-3 text-center">
+        {% if ong.logo_url %}
+        <img src="{{ url_for('static', filename=ong.logo_url) }}" alt="{{ ong.nom_ong }}"
+            class="img-fluid rounded-circle shadow mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+        {% else %}
+        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-3 shadow"
+            style="width: 150px; height: 150px;">
+            <i class="bi bi-building fs-1 text-white"></i>
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-md-9">
+        <h1 class="display-5 fw-bold">{{ ong.nom_ong }}</h1>
+        <p class="lead text-muted">{{ ong.domaine_intervation }}</p>
+        <hr>
+        <div class="row">
+            <div class="col-md-6">
+                <p><i class="bi bi-envelope me-2"></i> {{ ong.email }}</p>
+                <p><i class="bi bi-telephone me-2"></i> {{ ong.telephone }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><i class="bi bi-geo-alt me-2"></i> {{ ong.adresse }}</p>
+                <p>
+                    <span
+                        class="badge {% if ong.statut_de_validation == 'validé' %}bg-success{% elif ong.statut_de_validation == 'rejetée' %}bg-danger{% else %}bg-warning{% endif %}">
+                        {{ t.get(ong.statut_de_validation, ong.statut_de_validation) }}
+                    </span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mb-4">
+    <h3 class="border-bottom pb-2 mb-3">{{ t.social_cases }}</h3>
+    {% if cases %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for case in cases %}
+        <div class="col">
+            <div class="card h-100 shadow-sm hover-shadow transition-all">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold">{{ case.titre }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">
+                        <i class="bi bi-calendar-event me-1"></i> {{ case.date_publication }}
+                    </h6>
+                    <p class="card-text text-truncate-3">{{ case.description }}</p>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <span
+                            class="badge {% if case.statut == 'Résolu' %}bg-success{% elif case.statut == 'Urgent' %}bg-danger{% else %}bg-primary{% endif %}">
+                            {{ t.get(case.statut, case.statut) }}
+                        </span>
+                        <a href="{{ url_for('edit_case', id=case.id_cas_social) }}"
+                            class="btn btn-sm btn-outline-primary">
+                            {{ t.view_details }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info py-4 text-center">
+        <i class="bi bi-info-circle fs-4 d-block mb-2"></i>
+        {{ t.no_records }}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

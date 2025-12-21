@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="py-5">
+
+    <!-- Header -->
+    <div class="text-center mb-5">
+        <h2 class="display-5 fw-bold text-primary mb-3">{{ t.impact_tracking }}</h2>
+        <p class="lead text-muted mx-auto" style="max-width: 600px;">
+            {{ t.impact_desc }}
+        </p>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="card shadow-sm border-0 rounded-4 mb-5">
+        <div class="card-body p-4">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted small text-uppercase">{{ t.ngos }}</label>
+                    <select id="filter-ong" class="form-select border-0 bg-light rounded-3">
+                        <option value="">{{ t.all }}</option>
+                        {% for ong in filter_ongs %}
+                        <option value="{{ ong.id_ong }}">{{ ong.nom_ong }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted small text-uppercase">{{ t.categories }}</label>
+                    <select id="filter-category" class="form-select border-0 bg-light rounded-3">
+                        <option value="">{{ t.all }}</option>
+                        {% for cat in filter_categories %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted small text-uppercase">{{ t.address }}</label>
+                    <select id="filter-location" class="form-select border-0 bg-light rounded-3">
+                        <option value="">{{ t.all }}</option>
+                        {% for loc in filter_locations %}
+                        <option value="{{ loc }}">{{ loc }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-12">
+            <div class="card bg-primary text-white shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-body text-center p-4">
+                    <div class="d-flex align-items-center justify-content-center gap-3">
+                        <div class="bg-white bg-opacity-25 rounded-circle p-3">
+                            <i class="bi bi-people-fill fs-2"></i>
+                        </div>
+                        <div>
+                            <h2 id="total-beneficiaries-count" class="display-4 fw-bold mb-0">{{ total_beneficiaries }}
+                            </h2>
+                            <p class="mb-0 opacity-75">{{ t.total_beneficiaries }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row g-4 mb-5">
+        <!-- Bar Chart -->
+        <div class="col-lg-7">
+            <div class="card shadow-lg border-0 rounded-4 h-100">
+                <div class="card-header bg-white py-3 border-0">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-bar-chart-fill text-primary me-2"></i> {{ t.by_ong }}</h5>
+                </div>
+                <div class="card-body p-4">
+                    <canvas id="ongChart" style="min-height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pie Chart -->
+        <div class="col-lg-5">
+            <div class="card shadow-lg border-0 rounded-4 h-100">
+                <div class="card-header bg-white py-3 border-0">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-pie-chart-fill text-success me-2"></i> {{ t.sector_impact
+                        }}</h5>
+                </div>
+                <div class="card-body p-4 d-flex align-items-center justify-content-center">
+                    <div style="width: 100%; max-width: 350px;">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const ongCtx = document.getElementById('ongChart').getContext('2d');
+        const catCtx = document.getElementById('categoryChart').getContext('2d');
+
+        let ongChart, categoryChart;
+
+        const filters = {
+            ong: document.getElementById('filter-ong'),
+            category: document.getElementById('filter-category'),
+            location: document.getElementById('filter-location')
+        };
+
+        function updateStats() {
+            const params = new URLSearchParams();
+            if (filters.ong.value) params.append('ong_id', filters.ong.value);
+            if (filters.category.value) params.append('category', filters.category.value);
+            if (filters.location.value) params.append('location', filters.location.value);
+
+            fetch(`/api/stats/beneficiaries?${params.toString()}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Update Total Counter
+                    animateValue("total-beneficiaries-count", parseInt(document.getElementById('total-beneficiaries-count').innerText) || 0, data.total, 500);
+
+                    // Update Charts
+                    renderOngChart(data.by_ong);
+                    renderCategoryChart(data.by_category);
+                });
+        }
+
+        function renderOngChart(data) {
+            const labels = data.map(item => item.label);
+            const values = data.map(item => item.value);
+
+            if (ongChart) {
+                ongChart.data.labels = labels;
+                ongChart.data.datasets[0].data = values;
+                ongChart.update();
+            } else {
+                ongChart = new Chart(ongCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '{{ t.beneficiaries }}',
+                            data: values,
+                            backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                            borderColor: 'rgb(13, 110, 253)',
+                            borderWidth: 1,
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: { beginAtZero: true, grid: { display: false } },
+                            y: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+        }
+
+        function renderCategoryChart(data) {
+            const labels = data.map(item => item.label);
+            const values = data.map(item => item.value);
+
+            if (categoryChart) {
+                categoryChart.data.labels = labels;
+                categoryChart.data.datasets[0].data = values;
+                categoryChart.update();
+            } else {
+                categoryChart = new Chart(catCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: [
+                                'rgba(13, 110, 253, 0.8)',
+                                'rgba(25, 135, 84, 0.8)',
+                                'rgba(255, 193, 7, 0.8)',
+                                'rgba(220, 53, 69, 0.8)',
+                                'rgba(13, 202, 240, 0.8)',
+                                'rgba(102, 16, 242, 0.8)'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        },
+                        cutout: '70%'
+                    }
+                });
+            }
+        }
+
+        function animateValue(id, start, end, duration) {
+            const obj = document.getElementById(id);
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // Initial load
+        updateStats();
+
+        // Event listeners
+        Object.values(filters).forEach(f => f.addEventListener('change', updateStats));
+    });
+</script>
+
+<style>
+    .form-select:focus {
+        box-shadow: none;
+        background-color: #f8f9fa;
+    }
+
+    .hover-shadow {
+        transition: all 0.3s ease;
+    }
+
+    .hover-shadow:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 1rem 3rem rgba(0, 0, 0, .175) !important;
+    }
+</style>
+{% endblock %}
