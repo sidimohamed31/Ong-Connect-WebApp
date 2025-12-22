@@ -15,7 +15,15 @@
     </div>
     <div class="col-md-9">
         <h1 class="display-5 fw-bold">{{ ong.nom_ong }}</h1>
-        <p class="lead text-muted">{{ ong.domaine_intervation }}</p>
+        <div class="mb-3">
+            {% if ong.domaine_intervation %}
+            {% for domain in ong.domaine_intervation.split(',') %}
+            <span class="badge border border-primary text-primary bg-light px-3 py-2 rounded-pill me-1 mb-1 shadow-sm">
+                {{ t.get(domain.strip(), domain.strip()) }}
+            </span>
+            {% endfor %}
+            {% endif %}
+        </div>
         <hr>
         <div class="row">
             <div class="col-md-6">
@@ -41,19 +49,30 @@
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
         {% for case in cases %}
         <div class="col">
-            <div class="card h-100 shadow-sm hover-shadow transition-all">
+            <div class="card h-100 shadow-sm hover-shadow transition-all border-0">
+                <!-- Case Image -->
+                <div style="height: 180px; overflow: hidden; background-color: #f8f9fa;">
+                    {% if case.first_image %}
+                    <img src="{{ url_for('static', filename=case.first_image) }}" class="card-img-top w-100 h-100"
+                        alt="{{ case.titre }}" style="object-fit: cover;">
+                    {% else %}
+                    <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted opacity-50">
+                        <i class="bi bi-image fs-1"></i>
+                    </div>
+                    {% endif %}
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title fw-bold">{{ case.titre }}</h5>
-                    <h6 class="card-subtitle mb-2 text-muted">
+                    <h5 class="card-title fw-bold text-truncate">{{ case.titre }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted small">
                         <i class="bi bi-calendar-event me-1"></i> {{ case.date_publication }}
                     </h6>
-                    <p class="card-text text-truncate-3">{{ case.description }}</p>
+                    <p class="card-text text-muted small text-truncate-2">{{ case.description }}</p>
                     <div class="d-flex justify-content-between align-items-center mt-3">
                         <span
                             class="badge {% if case.statut == 'Résolu' %}bg-success{% elif case.statut == 'Urgent' %}bg-danger{% else %}bg-primary{% endif %}">
                             {{ t.get(case.statut, case.statut) }}
                         </span>
-                        <a href="{{ url_for('edit_case', id=case.id_cas_social) }}"
+                        <a href="{{ url_for('public_case_details', id=case.id_cas_social) }}"
                             class="btn btn-sm btn-outline-primary">
                             {{ t.view_details }}
                         </a>

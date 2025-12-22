@@ -224,14 +224,14 @@ TRANSLATIONS = {
         'rejetée': 'مرفوض',
         # Status - Case
         'En cours': 'قيد الإنجاز',
-        'Résolu': 'تم الحل',
+        'Résolu': 'تم الإنجاز',
         'Urgent': 'عاجل',
         # General
         'search': 'بحث...',
         'logout': 'تسجيل الخروج',
         'profile': 'الملف الشخصي',
         'view_details': 'عرض التفاصيل',
-        'donor_visitor': 'مانح / زائر',
+        'donor_visitor': 'متبرع / زائر',
         'donor_desc': 'تصفح الحالات الاجتماعية وساهم في إحداث تغيير.',
         'enter': 'دخول',
         'ong_access': 'فضاء المنظمات',
@@ -1232,8 +1232,13 @@ def detail_ong(id):
             if not ong:
                 return "NGO not found", 404
                 
-            # Fetch associated social cases
-            cursor.execute("SELECT * FROM cas_social WHERE id_ong=%s", (id,))
+            # Fetch associated social cases with their first image
+            cursor.execute("""
+                SELECT c.*, 
+                       (SELECT file_url FROM media WHERE id_cas_social = c.id_cas_social LIMIT 1) as first_image
+                FROM cas_social c
+                WHERE c.id_ong=%s
+            """, (id,))
             cases = cursor.fetchall()
             
     finally:
@@ -1243,10 +1248,27 @@ def detail_ong(id):
 # 3. Cas Social
 @app.route('/cases')
 def list_cases():
+    # Security: If ONG is logged in, show only their cases
+    # If Admin is logged in, show all cases
+    user_type = session.get('user_type')
+    user_id = session.get('user_id')
+    
+    if user_type == 'admin':
+        query = "SELECT c.*, o.nom_ong FROM cas_social c LEFT JOIN ong o ON c.id_ong = o.id_ong"
+        params = ()
+    elif user_type == 'ong':
+        query = "SELECT c.*, o.nom_ong FROM cas_social c LEFT JOIN ong o ON c.id_ong = o.id_ong WHERE c.id_ong = %s"
+        params = (user_id,)
+    else:
+        # For security, redirect unauthorized users to the public view
+        flash("Veuillez vous connecter pour accéder à cette page.", "warning")
+        return redirect(url_for('public_dashboard'))
+
     with get_db() as conn:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT c.*, o.nom_ong FROM cas_social c LEFT JOIN ong o ON c.id_ong = o.id_ong")
+            cursor.execute(query, params)
             cases = cursor.fetchall()
+            
     return render_template('cas_social/list.html', cases=cases)
 
 @app.route('/cases/add', methods=['GET', 'POST'])

@@ -22,41 +22,63 @@
         </div>
 
         <!-- Media Gallery -->
-        {% if media_list %}
-        <div id="mediaCarousel" class="carousel slide mb-5 shadow rounded overflow-hidden" data-bs-ride="carousel">
-            <div class="carousel-inner">
-                {% for media in media_list %}
-                <div class="carousel-item {% if loop.first %}active{% endif %}">
-                    {% if media.file_url.endswith(('.mp4', '.mov', '.avi')) %}
-                    <video controls class="d-block w-100"
-                        style="max-height: 500px; object-fit: contain; background: #000;">
+        <div class="mb-5">
+            <h3 class="fw-bold border-bottom pb-2 mb-4">{{ t.media_gallery }}</h3>
+
+            {% if media_list and media_list|length > 0 %}
+            {% if media_list|length == 1 %}
+            {% set media = media_list[0] %}
+            <div class="d-flex justify-content-center">
+                <div class="shadow rounded overflow-hidden" style="width: fit-content;">
+                    {% if media.file_url.lower().endswith(('.mp4', '.mov', '.avi', '.webm')) %}
+                    <video controls class="d-block" style="max-height: 600px; max-width: 100%; background: #000;">
                         <source src="{{ url_for('static', filename=media.file_url) }}">
-                        Your browser does not support the video tag.
                     </video>
                     {% else %}
-                    <img src="{{ url_for('static', filename=media.file_url) }}" class="d-block w-100" alt="Case Media"
-                        style="max-height: 500px; object-fit: contain; background: #f8f9fa;">
+                    <img src="{{ url_for('static', filename=media.file_url) }}" class="img-fluid d-block"
+                        alt="{{ case.titre }}" style="max-height: 600px; width: auto;">
                     {% endif %}
                 </div>
-                {% endfor %}
             </div>
-            {% if media_list|length > 1 %}
-            <button class="carousel-control-prev" type="button" data-bs-target="#mediaCarousel" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Previous</span>
-            </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#mediaCarousel" data-bs-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Next</span>
-            </button>
+            {% else %}
+            <div id="caseMediaCarousel" class="carousel slide shadow rounded overflow-hidden mx-auto"
+                data-bs-ride="carousel" style="background-color: #f8f9fa; width: fit-content; max-width: 100%;">
+                <div class="carousel-inner">
+                    {% for media in media_list %}
+                    <div class="carousel-item {% if loop.first %}active{% endif %}">
+                        {% if media.file_url.lower().endswith(('.mp4', '.mov', '.avi', '.webm')) %}
+                        <video controls class="d-block mx-auto"
+                            style="max-height: 500px; max-width: 100%; background: #000;">
+                            <source src="{{ url_for('static', filename=media.file_url) }}">
+                        </video>
+                        {% else %}
+                        <img src="{{ url_for('static', filename=media.file_url) }}" class="d-block mx-auto"
+                            alt="{{ case.titre }}" style="max-height: 500px; width: auto; max-width: 100%;">
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <button class="carousel-control-prev" type="button" data-bs-target="#caseMediaCarousel"
+                    data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true" style="filter: invert(1);"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#caseMediaCarousel"
+                    data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true" style="filter: invert(1);"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
+            {% endif %}
+            {% else %}
+            <!-- No media placeholder -->
+            <div class="text-center p-5 bg-light rounded text-muted border">
+                <i class="bi bi-images fs-1 opacity-25 d-block mb-3"></i>
+                <p>{{ t.get('no_media', 'Aucun média disponible pour ce cas.') }}</p>
+            </div>
             {% endif %}
         </div>
-        {% elif case.logo_url %} <!-- Fallback to ONG logo if no media -->
-        <div class="text-center mb-5 bg-light py-5 rounded">
-            <img src="{{ url_for('static', filename=case.logo_url) }}" class="img-fluid rounded-circle"
-                style="width: 150px; height: 150px; object-fit: cover;">
-        </div>
-        {% endif %}
 
         <div class="mb-5">
             <h3 class="fw-bold border-bottom pb-2 mb-3">{{ t.description }}</h3>
@@ -91,33 +113,7 @@
                     <p class="mb-0"><i class="bi bi-geo-alt text-primary me-2"></i> {{ case.ong_address }}</p>
                 </div>
 
-                <hr>
 
-                <!-- Actions -->
-                <div class="d-grid gap-2">
-                    {% if session.get('user_type') == 'admin' %}
-                    <a href="{{ url_for('edit_case', id=case.id_cas_social) }}" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-pencil-square"></i> {{ t.edit }}
-                    </a>
-                    <form action="{{ url_for('delete_case', id=case.id_cas_social) }}" method="POST"
-                        onsubmit="return confirm('{{ t.confirm_delete }}')">
-                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">
-                            <i class="bi bi-trash"></i> {{ t.delete }}
-                        </button>
-                    </form>
-                    {% else %}
-                    <button class="btn btn-outline-primary btn-sm" data-action="edit"
-                        data-url="{{ url_for('edit_case', id=case.id_cas_social) }}" data-ong-id="{{ case.id_ong }}"
-                        onclick="openPasswordModal(this.dataset.url, this.dataset.action, parseInt(this.dataset.ongId))">
-                        <i class="bi bi-pencil-square"></i> {{ t.edit }}
-                    </button>
-                    <button class="btn btn-outline-danger btn-sm" data-action="delete"
-                        data-url="{{ url_for('delete_case', id=case.id_cas_social) }}" data-ong-id="{{ case.id_ong }}"
-                        onclick="openPasswordModal(this.dataset.url, this.dataset.action, parseInt(this.dataset.ongId))">
-                        <i class="bi bi-trash"></i> {{ t.delete }}
-                    </button>
-                    {% endif %}
-                </div>
             </div>
         </div>
     </div>

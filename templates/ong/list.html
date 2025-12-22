@@ -134,7 +134,7 @@
                                 <td class="ps-4">
                                     <div class="d-flex align-items-center">
                                         {% if ong.logo_url %}
-                                        <img src="{{ url_for('static', filename='uploads/logos/' + ong.logo_url) }}"
+                                        <img src="{{ url_for('static', filename=ong.logo_url) }}"
                                             class="rounded-circle me-3 border"
                                             style="width: 40px; height: 40px; object-fit: cover;">
                                         {% else %}
@@ -156,8 +156,16 @@
                                     <div class="small text-muted">{{ ong.telephone }}</div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-light text-dark border-0 rounded-pill px-3 py-2 fw-normal">{{
-                                        t.get(ong.domaine_intervation, ong.domaine_intervation) }}</span>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% if ong.domaine_intervation %}
+                                        {% for domain in ong.domaine_intervation.split(',') %}
+                                        <span
+                                            class="badge border border-primary-subtle text-primary bg-primary-subtle bg-opacity-10 px-2 py-1 rounded-pill small fw-normal">
+                                            {{ t.get(domain.strip(), domain.strip()) }}
+                                        </span>
+                                        {% endfor %}
+                                        {% endif %}
+                                    </div>
                                 </td>
                                 <td>
                                     {% if ong.statut_de_validation == 'validé' %}
