@@ -196,7 +196,7 @@
 
                                         <button type="button" data-url="{{ url_for('edit_ong', id=ong.id_ong) }}"
                                             data-ong-id="{{ ong.id_ong }}"
-                                            onclick="openPasswordModal(this.getAttribute('data-url'), 'edit', this.getAttribute('data-ong-id'))"
+                                            onclick="openPasswordModal(this.dataset.url, 'edit', parseInt(this.dataset.ongId))"
                                             class="btn btn-sm btn-light text-primary rounded-circle"
                                             data-bs-toggle="tooltip" title="{{ t.edit }}">
                                             <i class="bi bi-pencil"></i>
@@ -204,7 +204,7 @@
 
                                         <button type="button" data-url="{{ url_for('delete_ong', id=ong.id_ong) }}"
                                             data-ong-id="{{ ong.id_ong }}"
-                                            onclick="openPasswordModal(this.getAttribute('data-url'), 'delete', this.getAttribute('data-ong-id'))"
+                                            onclick="openPasswordModal(this.dataset.url, 'delete', parseInt(this.dataset.ongId))"
                                             class="btn btn-sm btn-light text-danger rounded-circle"
                                             data-bs-toggle="tooltip" title="{{ t.delete }}">
                                             <i class="bi bi-trash"></i>

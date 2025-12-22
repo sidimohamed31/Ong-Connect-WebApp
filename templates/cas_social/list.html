@@ -45,10 +45,6 @@
                     <a href="{{ url_for('public_case_details', id=case.id_cas_social) }}"
                         class="btn btn-sm btn-light text-info rounded-circle" data-bs-toggle="tooltip"
                         title="{{ t.view_details }}"><i class="bi bi-eye"></i></a>
-                <td class="text-end pe-4">
-                    <a href="{{ url_for('public_case_details', id=case.id_cas_social) }}"
-                        class="btn btn-sm btn-light text-info rounded-circle" data-bs-toggle="tooltip"
-                        title="{{ t.view_details }}"><i class="bi bi-eye"></i></a>
 
                     {% if session.get('user_type') == 'admin' %}
                     <a href="{{ url_for('edit_case', id=case.id_cas_social) }}"
@@ -62,13 +58,15 @@
                     </form>
                     {% else %}
                     <!-- Public/ONG Actions -->
-                    <button
-                        onclick="openPasswordModal('{{ url_for('edit_case', id=case.id_cas_social) }}', 'edit', '{{ case.id_ong }}')"
+                    <button data-url="{{ url_for('edit_case', id=case.id_cas_social) }}" data-action="edit"
+                        data-ong-id="{{ case.id_ong|default(0)|int }}"
+                        onclick="openPasswordModal(this.dataset.url, this.dataset.action, parseInt(this.dataset.ongId))"
                         class="btn btn-sm btn-light text-primary rounded-circle" data-bs-toggle="tooltip"
                         title="{{ t.edit }}"><i class="bi bi-pencil-square"></i></button>
 
-                    <button
-                        onclick="openPasswordModal('{{ url_for('delete_case', id=case.id_cas_social) }}', 'delete', '{{ case.id_ong }}')"
+                    <button data-url="{{ url_for('delete_case', id=case.id_cas_social) }}" data-action="delete"
+                        data-ong-id="{{ case.id_ong|default(0)|int }}"
+                        onclick="openPasswordModal(this.dataset.url, this.dataset.action, parseInt(this.dataset.ongId))"
                         class="btn btn-sm btn-light text-danger rounded-circle" data-bs-toggle="tooltip"
                         title="{{ t.delete }}"><i class="bi bi-trash"></i></button>
                     {% endif %}

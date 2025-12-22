@@ -121,14 +121,14 @@
                                 data-bs-toggle="tooltip" title="{{ t.edit }}"
                                 data-url="{{ url_for('edit_case', id=case.id_cas_social) }}"
                                 data-ong-id="{{ case.id_ong }}"
-                                onclick="openPasswordModal(this.getAttribute('data-url'), 'edit', this.getAttribute('data-ong-id'))">
+                                onclick="openPasswordModal(this.dataset.url, 'edit', parseInt(this.dataset.ongId))">
                                 <i class="bi bi-pencil-square"></i>
                             </button>
                             <button type="button" class="btn btn-sm btn-light text-danger rounded-circle"
                                 data-bs-toggle="tooltip" title="{{ t.delete }}"
                                 data-url="{{ url_for('delete_case', id=case.id_cas_social) }}"
                                 data-ong-id="{{ case.id_ong }}"
-                                onclick="openPasswordModal(this.getAttribute('data-url'), 'delete', this.getAttribute('data-ong-id'))">
+                                onclick="openPasswordModal(this.dataset.url, 'delete', parseInt(this.dataset.ongId))">
                                 <i class="bi bi-trash"></i>
                             </button>
                             {% endif %}
