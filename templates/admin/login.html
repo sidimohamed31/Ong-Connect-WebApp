@@ -11,6 +11,7 @@
                 </div>
 
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-3">
                         <label for="email" class="form-label">{{ t.email }}</label>
                         <input type="email" class="form-control rounded-3" id="email" name="email" required>

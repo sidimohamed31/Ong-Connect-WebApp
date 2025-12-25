@@ -10,7 +10,8 @@
             </div>
             <div class="card-body p-4">
                 <form method="POST" enctype="multipart/form-data">
-                    <div class="mb-4">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
                         <label for="titre" class="form-label">{{ t.title_field }}</label>
                         <input type="text" class="form-control form-control-lg" id="titre" name="titre"
                             value="{{ case.titre if case else '' }}" required placeholder="{{ t.title_field }}...">

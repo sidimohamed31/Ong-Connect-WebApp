@@ -4,7 +4,9 @@ import pymysql.cursors
 from datetime import datetime
 import os
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
+import secrets
 
 
 from config import Config
@@ -41,6 +43,28 @@ def get_db():
     finally:
         conn.close()
 
+def check_and_migrate_password(conn, table, id_column, id_value, plain_password, db_password_value):
+    """
+    Checks password against DB value.
+    If DB value is plain text and matches, it generates a hash, updates DB, and returns True.
+    If DB value is a hash, it verifies it and returns result.
+    """
+    # 1. Check if it looks like a hash (Werkzeug hashes start with method:)
+    if db_password_value.startswith('scrypt:') or db_password_value.startswith('pbkdf2:'):
+        return check_password_hash(db_password_value, plain_password)
+    
+    # 2. Fallback: Check as plaintext (Legacy)
+    if db_password_value == plain_password:
+        # Migrate to Hash
+        print(f"Migrating password for {table} {id_value}")
+        new_hash = generate_password_hash(plain_password)
+        with conn.cursor() as cursor:
+            cursor.execute(f"UPDATE {table} SET mot_de_passe=%s WHERE {id_column}=%s", (new_hash, id_value))
+        conn.commit()
+        return True
+        
+    return False
+
 def get_db_connection():
     # Legacy wrapper for parts not yet refactored or manual usage
     return pymysql.connect(
@@ -52,9 +76,11 @@ def get_db_connection():
         cursorclass=pymysql.cursors.DictCursor
     )
 
+
+
 def init_db():
     # Connect without database first to create it if it doesn't exist
-    conn = pymysql.connect(host=DB_HOST, user=DB_USER, password=DB_PASSWORD)
+    conn = pymysql.connect(host="localhost", user="root", password="sidimedtop1")
     try:
         with conn.cursor() as cursor:
             cursor.execute(f"CREATE DATABASE IF NOT EXISTS {DB_NAME}")
@@ -87,7 +113,7 @@ def init_db():
                     statut_de_validation ENUM('enattente', 'validé', 'rejetée') DEFAULT 'enattente',
                     update_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     logo_url VARCHAR(255),
-                    mot_de_passe VARCHAR(40) NOT NULL
+                    mot_de_passe VARCHAR(255) NOT NULL
                 )
             """)
 
@@ -282,6 +308,25 @@ TRANSLATIONS = {
         'contact': 'معلومات الاتصال',
         'admin_login': 'تسجيل دخول المسؤول',
         'admin_login_desc': 'المساحة المخصصة للمسؤولين',
+        'feature_unavailable': 'هذه الميزة غير متوفرة بعد. يرجى الاتصال بالمسؤول.',
+        'forgot_password': 'نسيت كلمة المرور؟',
+        'reset_subtitle': 'أدخل بريدك الإلكتروني لاستلام كلمة مرور جديدة.',
+        'send_reset': 'إرسال كلمة مرور جديدة',
+        'back_login': 'العودة لتسجيل الدخول',
+        'email_not_found': 'البريد الإلكتروني غير موجود.',
+        'password_reset_success': 'تم إعادة تعيين كلمة المرور. تحقق من بريدك الإلكتروني (الوهمي).',
+        'hero_title': 'معاً من أجل عالم أفضل',
+        'hero_subtitle': 'المنصة التي تربط المنظمات غير الحكومية بالاحتياجات الحقيقية للمجتمع.',
+        'join_movement': 'انضم إلينا',
+        'active_ongs': 'منظمة نشطة',
+        'search_placeholder': 'ابحث عن حالة...',
+        'filter_by': 'فرز حسب',
+        'all_statuses': 'جميع الحالات',
+        'all_ongs_filter': 'جميع المنظمات',
+        'all_domains': 'جميع المجالات',
+        'clear_filters': 'مسح الفلاتر',
+        'showing_results': 'عرض النتائج',
+        'no_results_found': 'لم يتم العثور على نتائج',
     },
     'fr': {
         'title': 'ONG Connect',
@@ -390,6 +435,25 @@ TRANSLATIONS = {
         'contact': 'Contact',
         'admin_login': 'Connexion Admin',
         'admin_login_desc': 'Espace réservé aux administrateurs',
+        'feature_unavailable': 'Cette fonctionnalité n\'est pas encore disponible. Veuillez contacter un administrateur.',
+        'forgot_password': 'Mot de passe oublié ?',
+        'reset_subtitle': 'Entrez votre email pour recevoir un nouveau mot de passe.',
+        'send_reset': 'Envoyer le nouveau mot de passe',
+        'back_login': 'Retour à la connexion',
+        'email_not_found': 'Email introuvable.',
+        'password_reset_success': 'Mot de passe réinitialisé. Vérifiez votre email (simulé).',
+        'hero_title': 'Ensemble pour un monde meilleur',
+        'hero_subtitle': 'La plateforme qui connecte les ONGs aux besoins réels de la communauté.',
+        'join_movement': 'Rejoignez le mouvement',
+        'active_ongs': 'ONGs Actives',
+        'search_placeholder': 'Rechercher un cas...',
+        'filter_by': 'Filtrer par',
+        'all_statuses': 'Tous les statuts',
+        'all_ongs_filter': 'Toutes les ONGs',
+        'all_domains': 'Tous les domaines',
+        'clear_filters': 'Effacer les filtres',
+        'showing_results': 'Affichage des résultats',
+        'no_results_found': 'Aucun résultat trouvé',
     }
 }
 
@@ -397,6 +461,29 @@ TRANSLATIONS = {
 def before_request():
     if 'lang' not in session:
         session['lang'] = 'ar'
+    
+    # Custom CSRF Protection
+    # 1. Generate token if not exists
+    if 'csrf_token' not in session:
+        session['csrf_token'] = os.urandom(24).hex()
+
+    app.jinja_env.globals['csrf_token'] = lambda: session['csrf_token']
+
+    # 2. Check token on POST/PUT/DELETE
+    if request.method in ['POST', 'PUT', 'DELETE']:
+        # Exception for login? No, login needs CSRF too.
+        # Check Form Data
+        token = request.form.get('csrf_token')
+        
+        # Check Headers (for AJAX)
+        if not token:
+            token = request.headers.get('X-CSRFToken')
+            
+        if not token or token != session.get('csrf_token'):
+            # Allow API bypass? Maybe key for verify endpoints if needed, 
+            # but audit said "No CSRF Protection", so we secure everything.
+            # If verify_... endpoints are called via AJAX, they MUST send the header.
+            abort(400, description="CSRF Token Missing or Invalid")
 
 @app.context_processor
 def inject_conf_var():
@@ -428,11 +515,10 @@ def admin_login():
         
         with get_db() as conn:
             with conn.cursor() as cursor:
-                # Todo: Use hashing in production
-                cursor.execute("SELECT * FROM administrateur WHERE email=%s AND mot_de_passe=%s", (email, password))
+                cursor.execute("SELECT * FROM administrateur WHERE email=%s", (email,))
                 admin = cursor.fetchone()
                 
-                if admin:
+                if admin and check_and_migrate_password(conn, 'administrateur', 'id_admin', admin['id_admin'], password, admin['mot_de_passe']):
                     session['user_type'] = 'admin'
                     session['user_id'] = admin['id_admin']
                     session['user_name'] = admin['nom']
@@ -451,7 +537,8 @@ def create_default_admin():
             with conn.cursor() as cursor:
                 cursor.execute("SELECT * FROM administrateur WHERE email='admin@ongconnect.com'")
                 if not cursor.fetchone():
-                    cursor.execute("INSERT INTO administrateur (nom, email, mot_de_passe) VALUES ('Admin', 'admin@ongconnect.com', 'admin123')")
+                    hashed = generate_password_hash('admin123')
+                    cursor.execute("INSERT INTO administrateur (nom, email, mot_de_passe) VALUES ('Admin', 'admin@ongconnect.com', %s)", (hashed,))
                     conn.commit()
                     return "Default admin created: admin@ongconnect.com / admin123"
                 return "Admin already exists"
@@ -534,23 +621,69 @@ def public_dashboard():
             # Fetch random/latest ONGs for the dashboard
             cursor.execute("SELECT * FROM ong ORDER BY update_at DESC LIMIT 6")
             ongs = cursor.fetchall()
+
+            # Fetch ALL ONGs for filter dropdown
+            cursor.execute("SELECT id_ong, nom_ong FROM ong ORDER BY nom_ong")
+            all_ongs = cursor.fetchall()
+
+            # Fetch categories for filter
+            cursor.execute("SELECT * FROM categorie")
+            categories = cursor.fetchall()
+
+            # Fetch ALL cases for client-side filtering (remove pagination)
+            sql_all = """
+                SELECT c.*, o.nom_ong, o.logo_url, m.file_url 
+                FROM cas_social c 
+                LEFT JOIN ong o ON c.id_ong = o.id_ong
+                LEFT JOIN (
+                    SELECT id_cas_social, MIN(file_url) as file_url 
+                    FROM media 
+                    GROUP BY id_cas_social
+                ) m ON c.id_cas_social = m.id_cas_social
+                ORDER BY c.date_publication DESC
+            """
+            cursor.execute(sql_all)
+            all_cases = cursor.fetchall()
+
+            # Dashboard Statistics
+            cursor.execute("SELECT COUNT(*) as count FROM ong")
+            stats_nb_ongs = cursor.fetchone()['count']
+
+            cursor.execute("SELECT COUNT(*) as count FROM cas_social WHERE statut='Résolu'")
+            stats_resolved = cursor.fetchone()['count']
     
     pagination_iter = get_pagination_iter(page, total_pages)
 
     return render_template('public/dashboard.html', 
-                         cases=cases, 
+                         cases=cases,
+                         all_cases=all_cases,  # For client-side filtering
+                         all_ongs=all_ongs,
+                         categories=categories,
                          page=page, 
                          current_page=page, 
                          total_pages=total_pages,
                          pagination_iter=pagination_iter,
-                         ongs=ongs)
+                         ongs=ongs,
+                         stats_nb_ongs=stats_nb_ongs,
+                         stats_resolved=stats_resolved,
+                         stats_total_cases=total_cases)
 
 @app.route('/public/beneficiaries')
 def public_beneficiaries():
     with get_db() as conn:
         with conn.cursor() as cursor:
-            # Fetch Statistics for initial render
-            cursor.execute("SELECT COUNT(*) as count FROM beneficier")
+            # Fetch Statistics for initial render (Strict: Only Resolved Cases)
+            cursor.execute("""
+                SELECT 
+                    (SELECT COUNT(*) 
+                     FROM beneficier b 
+                     JOIN cas_social c ON b.id_cas_social = c.id_cas_social 
+                     WHERE c.statut = 'Résolu') + 
+                    (SELECT COUNT(*) FROM cas_social 
+                     WHERE statut = 'Résolu' 
+                     AND id_cas_social NOT IN (SELECT DISTINCT id_cas_social FROM beneficier)) 
+                as count
+            """)
             total_beneficiaries = cursor.fetchone()['count']
             
             # Fetch ONGs for filter
@@ -579,25 +712,36 @@ def api_beneficiary_stats():
     
     with get_db() as conn:
         with conn.cursor() as cursor:
-            # Base query
+            # Base query using UNION for Strict Count (Only Resolved)
             query = """
-                SELECT b.id_beneficiaire, b.adresse as b_adresse, o.id_ong, o.nom_ong, o.domaine_intervation 
-                FROM beneficier b
-                JOIN cas_social c ON b.id_cas_social = c.id_cas_social
-                JOIN ong o ON c.id_ong = o.id_ong
+                SELECT * FROM (
+                    SELECT b.id_beneficiaire, b.adresse as b_adresse, c.adresse as c_adresse, o.id_ong, o.nom_ong, o.domaine_intervation 
+                    FROM beneficier b
+                    JOIN cas_social c ON b.id_cas_social = c.id_cas_social
+                    JOIN ong o ON c.id_ong = o.id_ong
+                    WHERE c.statut = 'Résolu'
+                    
+                    UNION ALL
+                    
+                    SELECT NULL, c.adresse, c.adresse, o.id_ong, o.nom_ong, o.domaine_intervation
+                    FROM cas_social c
+                    JOIN ong o ON c.id_ong = o.id_ong
+                    WHERE c.statut = 'Résolu' 
+                    AND c.id_cas_social NOT IN (SELECT DISTINCT id_cas_social FROM beneficier)
+                ) as combined
                 WHERE 1=1
             """
             params = []
             
             if ong_id:
-                query += " AND o.id_ong = %s"
+                query += " AND id_ong = %s"
                 params.append(ong_id)
             if location:
-                query += " AND (b.adresse LIKE %s OR c.adresse LIKE %s)"
+                query += " AND (b_adresse LIKE %s OR c_adresse LIKE %s)"
                 params.append(f"%{location}%")
                 params.append(f"%{location}%")
             if category:
-                query += " AND o.domaine_intervation LIKE %s"
+                query += " AND domaine_intervation LIKE %s"
                 params.append(f"%{category}%")
             
             cursor.execute(query, params)
@@ -675,10 +819,10 @@ def ong_login():
         conn = get_db_connection()
         try:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT * FROM ong WHERE email=%s AND mot_de_passe=%s", (email, password))
+                cursor.execute("SELECT * FROM ong WHERE email=%s", (email,))
                 ong = cursor.fetchone()
                 
-                if ong:
+                if ong and check_and_migrate_password(conn, 'ong', 'id_ong', ong['id_ong'], password, ong['mot_de_passe']):
                     # Check validation status
                     status = ong.get('statut_de_validation', 'enattente')
                     
@@ -699,6 +843,41 @@ def ong_login():
             conn.close()
             
     return render_template('ong/login.html')
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    lang_code = session.get('lang', 'ar')
+    t = TRANSLATIONS[lang_code]
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                # Check if ONG exists
+                cursor.execute("SELECT id_ong, nom_ong, email FROM ong WHERE email=%s", (email,))
+                ong = cursor.fetchone()
+                
+                if ong:
+                     # Generate random password
+                    new_password = secrets.token_urlsafe(8)
+                    hashed_password = generate_password_hash(new_password)
+                    
+                    # Update DB
+                    cursor.execute("UPDATE ong SET mot_de_passe=%s WHERE id_ong=%s", (hashed_password, ong['id_ong']))
+                    conn.commit()
+                    
+                    # Send Email (Mock)
+                    sent = send_reset_email(email, new_password)
+                    if sent:
+                        flash(t.get('password_reset_success'), "success")
+                        return redirect(url_for('ong_login'))
+                    else:
+                        flash("Erreur lors de l'envoi de l'email.", "danger")
+                else:
+                    flash(t.get('email_not_found'), "danger")
+    
+    return render_template('ong/forgot_password.html')
 
 @app.route('/ong/profile')
 def ong_profile():
@@ -796,7 +975,17 @@ def admin_dashboard():
             cursor.execute("SELECT COUNT(*) as count FROM cas_social")
             cases_count = cursor.fetchone()['count']
             
-            cursor.execute("SELECT COUNT(*) as count FROM beneficier")
+            cursor.execute("""
+                SELECT 
+                    (SELECT COUNT(*) 
+                     FROM beneficier b 
+                     JOIN cas_social c ON b.id_cas_social = c.id_cas_social 
+                     WHERE c.statut = 'Résolu') + 
+                    (SELECT COUNT(*) FROM cas_social 
+                     WHERE statut = 'Résolu' 
+                     AND id_cas_social NOT IN (SELECT DISTINCT id_cas_social FROM beneficier)) 
+                as count
+            """)
             beneficiaries_count = cursor.fetchone()['count']
             
             counts = {
@@ -824,10 +1013,10 @@ def verify_ong_password():
     try:
         with conn.cursor() as cursor:
             # Note: storing passwords in plain text as per existing implementation
-            cursor.execute("SELECT id_ong FROM ong WHERE id_ong=%s AND mot_de_passe=%s", (ong_id, password))
+            cursor.execute("SELECT id_ong, mot_de_passe FROM ong WHERE id_ong=%s", (ong_id,))
             result = cursor.fetchone()
             
-            if result:
+            if result and check_and_migrate_password(conn, 'ong', 'id_ong', result['id_ong'], password, result['mot_de_passe']):
                 # Set authorization in session for Edit actions
                 session['authorized_ong_id'] = int(ong_id)
                 return {'success': True}
@@ -849,10 +1038,10 @@ def verify_admin_credentials():
     try:
         with conn.cursor() as cursor:
             # Todo: hash check in production
-            cursor.execute("SELECT * FROM administrateur WHERE email=%s AND mot_de_passe=%s", (email, password))
+            cursor.execute("SELECT * FROM administrateur WHERE email=%s", (email,))
             admin = cursor.fetchone()
             
-            if admin:
+            if admin and check_and_migrate_password(conn, 'administrateur', 'id_admin', admin['id_admin'], password, admin['mot_de_passe']):
                 return {'success': True}
             else:
                 return {'success': False, 'message': 'Invalid credentials'}, 401
@@ -877,8 +1066,9 @@ def add_admin():
     if request.method == 'POST':
         with get_db() as conn:
             with conn.cursor() as cursor:
+                hashed_pw = generate_password_hash(request.form['mot_de_passe'])
                 sql = "INSERT INTO administrateur (nom, email, mot_de_passe) VALUES (%s, %s, %s)"
-                cursor.execute(sql, (request.form['nom'], request.form['email'], request.form['mot_de_passe']))
+                cursor.execute(sql, (request.form['nom'], request.form['email'], hashed_pw))
             conn.commit()
             flash(TRANSLATIONS[session.get('lang', 'ar')]['success_add'], 'success')
         return redirect(url_for('list_admins'))
@@ -1055,7 +1245,7 @@ def add_ong():
                         request.form['telephone'],
                         request.form['email'],
                         domains_str,
-                        request.form['mot_de_passe']
+                        generate_password_hash(request.form['mot_de_passe'])
                     ))
                     ong_id = cursor.lastrowid
                     
@@ -1163,6 +1353,97 @@ def edit_ong(id):
             flash(f"Error: {e}", "danger")
             return redirect(url_for('list_ngos'))
 
+# --- EMAIL HELPER ---
+import secrets
+import smtplib
+from email.mime.text import MIMEText
+
+def send_reset_email(to_email, new_password):
+    """
+    Sends a password reset email via SMTP (HTML format).
+    """
+    subject = "Renouvellement de mot de passe / إعادة تعيين كلمة المرور - ONG Connect"
+    
+    # HTML Body with French and Arabic
+    html_body = f"""
+    <html>
+    <body>
+        <div style="font-family: Arial, sans-serif; direction: ltr;">
+            <p>Bonjour,</p>
+            <p>Votre mot de passe a été réinitialisé par un administrateur.</p>
+            <p>Voici votre nouveau mot de passe temporaire : <b style="font-size: 16px;">{new_password}</b></p>
+            <p>Veuillez vous connecter et changer ce mot de passe dès que possible.</p>
+            <p>Cordialement,<br>Équipe ONG Connect</p>
+        </div>
+        <hr>
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; direction: rtl; text-align: right;">
+            <p>مرحباً،</p>
+            <p>تم إعادة تعيين كلمة المرور الخاصة بك بنجاح.</p>
+            <p>كلمة المرور المؤقتة الجديدة هي: <b style="font-size: 16px;">{new_password}</b></p>
+            <p>يرجى تسجيل الدخول وتغيير كلمة المرور في أقرب وقت ممكن.</p>
+            <p>مع تحيات،<br>فريق ONG Connect</p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Real SMTP Implementation
+    try:
+        smtp_server = app.config['MAIL_SERVER']
+        smtp_port = app.config['MAIL_PORT']
+        sender_email = app.config['MAIL_USERNAME']
+        password = app.config['MAIL_PASSWORD']
+        
+        # Guard clause for placeholder password
+        if password == 'YOUR_APP_PASSWORD_HERE' or not password:
+            print("❌ Error: Email password not configured in config.py")
+            return False
+
+        msg = MIMEText(html_body, 'html', 'utf-8')
+        msg['Subject'] = subject
+        msg['From'] = sender_email
+        msg['To'] = to_email
+
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, password)
+            server.send_message(msg)
+            
+        print(f"✅ Email sent successfully to {to_email}")
+        return True
+    except Exception as e:
+        print(f"❌ Email Error: {e}")
+        return False
+
+@app.route('/admin/ong/<int:id>/reset-password', methods=['POST'])
+@admin_required
+def admin_reset_password(id):
+    # Check handled by decorator
+        
+    # Generate random password
+    new_password = secrets.token_urlsafe(8)
+    hashed_password = generate_password_hash(new_password)
+    
+    with get_db() as conn:
+        with conn.cursor() as cursor:
+            # Get ONG details
+            cursor.execute("SELECT nom_ong, email FROM ong WHERE id_ong=%s", (id,))
+            ong = cursor.fetchone()
+            
+            if not ong:
+                flash("ONG introuvable.", "danger")
+                return redirect(url_for('list_ngos'))
+                
+            # Update Password
+            cursor.execute("UPDATE ong SET mot_de_passe=%s WHERE id_ong=%s", (hashed_password, id))
+        conn.commit()
+        
+    # Send Email
+    send_reset_email(ong['email'], new_password)
+    
+    flash(f"Mot de passe réinitialisé pour {ong['nom_ong']}. Le nouveau mot de passe a été envoyé par email.", "success")
+    return redirect(url_for('list_ngos'))
+
 @app.route('/ngos/delete/<int:id>', methods=['POST'])
 def delete_ong(id):
     # Password verification required for delete
@@ -1183,8 +1464,10 @@ def delete_ong(id):
          conn = get_db_connection()
          try:
              with conn.cursor() as cursor:
-                 cursor.execute("SELECT id_ong FROM ong WHERE id_ong=%s AND mot_de_passe=%s", (id, password))
-                 if not cursor.fetchone():
+                 cursor.execute("SELECT id_ong, mot_de_passe FROM ong WHERE id_ong=%s", (id,))
+                 ong = cursor.fetchone()
+                 
+                 if not ong or not check_and_migrate_password(conn, 'ong', 'id_ong', ong['id_ong'], password, ong['mot_de_passe']):
                      flash("Mot de passe incorrect.", "danger")
                      return redirect(url_for('list_ngos'))
          finally:
@@ -1450,8 +1733,10 @@ def delete_case(id):
                     flash("Mot de passe requis.", "danger")
                     return redirect(request.referrer or url_for('public_dashboard'))
                     
-                cursor.execute("SELECT id_ong FROM ong WHERE id_ong=%s AND mot_de_passe=%s", (ong_id, password))
-                if not cursor.fetchone():
+                cursor.execute("SELECT id_ong, mot_de_passe FROM ong WHERE id_ong=%s", (ong_id,))
+                ong = cursor.fetchone()
+                
+                if not ong or not check_and_migrate_password(conn, 'ong', 'id_ong', ong['id_ong'], password, ong['mot_de_passe']):
                     flash("Mot de passe incorrect.", "danger")
                     return redirect(request.referrer or url_for('public_dashboard'))
 
@@ -1541,12 +1826,29 @@ def list_beneficiaries():
             cursor.execute("SELECT DISTINCT adresse FROM beneficier WHERE adresse IS NOT NULL AND adresse != ''")
             locations = [l['adresse'] for l in cursor.fetchall()]
 
+            # Fetch Total Count (Explicit + Implicit)
+            # Fetch Total Count (Strict: Only Resolved Cases)
+            # 1. Explicit beneficiaries of Resolved cases
+            # 2. Resolved cases with NO beneficiaries (Implicit = 1)
+            cursor.execute("""
+                SELECT 
+                    (SELECT COUNT(*) 
+                     FROM beneficier b 
+                     JOIN cas_social c ON b.id_cas_social = c.id_cas_social 
+                     WHERE c.statut = 'Résolu') + 
+                    (SELECT COUNT(*) FROM cas_social 
+                     WHERE statut = 'Résolu' 
+                     AND id_cas_social NOT IN (SELECT DISTINCT id_cas_social FROM beneficier)) 
+                as count
+            """)
+            total_count = cursor.fetchone()['count']
+
     return render_template('beneficier/list.html', 
                          beneficiaries=beneficiaries,
                          filter_ongs=ongs,
                          filter_categories=categories,
                          filter_locations=locations,
-                         total_beneficiaries=len(beneficiaries))
+                         total_beneficiaries=total_count)
 
 @app.route('/beneficiaries/add', methods=['GET', 'POST'])
 def add_beneficiary():

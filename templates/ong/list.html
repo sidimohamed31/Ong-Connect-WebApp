@@ -217,6 +217,20 @@
                                             data-bs-toggle="tooltip" title="{{ t.delete }}">
                                             <i class="bi bi-trash"></i>
                                         </button>
+
+                                        <!-- Reset Password (Admin Only) -->
+                                        {% if session.get('user_type') == 'admin' %}
+                                        <form action="{{ url_for('admin_reset_password', id=ong.id_ong) }}"
+                                            method="POST" class="d-inline"
+                                            onsubmit="return confirm('{{ t.confirm_reset_password|default('Êtes-vous sûr ?')|replace('\'', '\\\'') }}')">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit"
+                                                class="btn btn-sm btn-light text-warning rounded-circle"
+                                                data-bs-toggle="tooltip" title="Reset Password">
+                                                <i class="bi bi-key-fill"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
                                     </div>
                                 </td>
                             </tr>

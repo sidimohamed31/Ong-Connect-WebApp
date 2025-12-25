@@ -53,6 +53,7 @@
 
                     <form action="{{ url_for('delete_case', id=case.id_cas_social) }}" method="POST" class="d-inline"
                         onsubmit="return confirm('{{ t.confirm_delete }}')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-sm btn-light text-danger rounded-circle"
                             data-bs-toggle="tooltip" title="{{ t.delete }}"><i class="bi bi-trash"></i></button>
                     </form>

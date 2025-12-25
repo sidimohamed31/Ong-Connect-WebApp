@@ -1,152 +1,308 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="py-5">
+<div class="py-4">
 
-    <!-- Hero Section / Search could go here -->
-    <div class="text-center mb-5">
-        <h2 class="display-5 fw-bold text-primary mb-3">{{ t.social_cases }}</h2>
-        <p class="lead text-muted mx-auto" style="max-width: 600px;">
-            {{ t.dashboard_intro }}
-        </p>
-    </div>
-
-    <!-- Stats Call to Action Removed -->
-
-    <!-- ONGs Partner Section -->
-    <div class="mb-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3 class="fw-bold">{{ t.ngos }}</h3>
-        </div>
-        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-6 g-3">
-            {% for ong in ongs %}
-            <div class="col">
-                <a href="{{ url_for('detail_ong', id=ong.id_ong) }}" class="text-decoration-none">
-                    <div class="card h-100 border-0 shadow-sm text-center py-3 hover-shadow transition-all">
-                        <div class="mx-auto mb-2" style="width: 60px; height: 60px;">
-                            {% if ong.logo_url %}
-                            <img src="{{ url_for('static', filename=ong.logo_url) }}"
-                                class="rounded-circle w-100 h-100 shadow-sm" style="object-fit: cover;">
-                            {% else %}
-                            <div
-                                class="w-100 h-100 rounded-circle bg-light d-flex align-items-center justify-content-center text-primary">
-                                <i class="bi bi-building"></i>
-                            </div>
-                            {% endif %}
-                        </div>
-                        <h6 class="text-dark small px-2 text-truncate">{{ ong.nom_ong }}</h6>
-                    </div>
-                </a>
-            </div>
-            {% endfor %}
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="hero-bg-pattern"></div>
+        <div class="hero-content text-center">
+            <h1 class="hero-title">{{ t.hero_title }}</h1>
+            <p class="hero-subtitle mb-4 mx-auto" style="max-width: 700px;">{{ t.hero_subtitle }}</p>
+            {% if not session.get('user_type') %}
+            <a href="{{ url_for('add_ong') }}" class="btn btn-light btn-lg shadow-lg">
+                <i class="bi bi-rocket-takeoff-fill"></i> {{ t.join_movement }}
+            </a>
+            {% endif %}
         </div>
     </div>
 
-    <!-- Social Cases Grid -->
-    <h3 class="fw-bold mb-4">{{ t.latest_cases }}</h3>
-    {% if cases %}
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
-        {% for case in cases %}
-        <div class="col">
-            <div class="card h-100 shadow-sm hover-shadow transition-all border-0 card-hover-effect">
-                <a href="{{ url_for('public_case_details', id=case.id_cas_social) }}"
-                    class="text-decoration-none text-dark">
-                    {% if case.file_url %}
-                    {% if case.file_url.endswith(('.mp4', '.mov', '.avi')) %}
-                    <div class="bg-light d-flex align-items-center justify-content-center text-muted"
-                        style="height: 200px;">
-                        <i class="bi bi-play-circle fs-1"></i>
+    <!-- Stats Overview -->
+    <div class="row g-4 mb-5">
+        <!-- Total Cases -->
+        <div class="col-md-4">
+            <div class="modern-stat-card stat-primary">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <div class="stat-value">{{ stats_total_cases }}</div>
+                        <div class="stat-label">{{ t.social_cases }}</div>
                     </div>
-                    {% else %}
-                    <img src="{{ url_for('static', filename=case.file_url) }}" class="card-img-top"
-                        alt="{{ case.titre }}" style="height: 200px; object-fit: cover;">
-                    {% endif %}
-                    {% else %}
-                    <div class="bg-light d-flex align-items-center justify-content-center text-muted"
-                        style="height: 200px;">
-                        <i class="bi bi-image fs-1 opacity-25"></i>
+                    <div class="stat-icon-wrapper">
+                        <i class="bi bi-heart-fill"></i>
                     </div>
-                    {% endif %}
-                </a>
-
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <span
-                            class="badge {% if case.statut == 'Résolu' %}bg-success{% elif case.statut == 'Urgent' %}bg-danger{% else %}bg-primary{% endif %} rounded-pill">
-                            {{ t.get(case.statut, case.statut) }}
-                        </span>
-                        <small class="text-muted"><i class="bi bi-clock me-1"></i> {{ case.date_publication
-                            }}</small>
-                    </div>
-
-                    <div class="d-flex align-items-center mb-2">
-                        {% if case.logo_url %}
-                        <img src="{{ url_for('static', filename=case.logo_url) }}" class="rounded-circle me-2"
-                            style="width: 20px; height: 20px; object-fit: cover;">
-                        {% else %}
-                        <i class="bi bi-building me-2 text-muted"></i>
-                        {% endif %}
-                        <small class="text-muted">{{ case.nom_ong }}</small>
-                    </div>
-
-                    <a href="{{ url_for('public_case_details', id=case.id_cas_social) }}"
-                        class="text-decoration-none text-dark">
-                        <h5 class="card-title fw-bold mb-2">{{ case.titre }}</h5>
-                        <p class="card-text text-muted small text-truncate-3">{{ case.description }}</p>
-                    </a>
-
-                    <div class="mt-3">
-                        <a href="{{ url_for('public_case_details', id=case.id_cas_social) }}"
-                            class="text-primary fw-bold small text-decoration-none">
-                            {{ t.view_details }} <i class="bi bi-arrow-right ms-1"></i>
-                        </a>
-                    </div>
+                </div>
+                <div class="progress" style="height: 8px; border-radius: 10px;">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: 75%"></div>
                 </div>
             </div>
         </div>
-        {% endfor %}
+
+        <!-- Active ONGs -->
+        <div class="col-md-4">
+            <div class="modern-stat-card stat-info">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <div class="stat-value">{{ stats_nb_ongs }}</div>
+                        <div class="stat-label">{{ t.active_ongs }}</div>
+                    </div>
+                    <div class="stat-icon-wrapper">
+                        <i class="bi bi-building-check"></i>
+                    </div>
+                </div>
+                <div class="progress" style="height: 8px; border-radius: 10px;">
+                    <div class="progress-bar bg-info" role="progressbar" style="width: 60%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resolved Cases -->
+        <div class="col-md-4">
+            <div class="modern-stat-card stat-success">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <div class="stat-value">{{ stats_resolved }}</div>
+                        <div class="stat-label">{{ t.resolved_cases }}</div>
+                    </div>
+                    <div class="stat-icon-wrapper">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </div>
+                </div>
+                <div class="progress" style="height: 8px; border-radius: 10px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 45%"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Fantastic Pagination -->
-    {% if total_pages > 1 %}
-    <nav aria-label="Page navigation">
-        <ul class="pagination-modern">
-            <!-- Previous -->
-            <li class="page-item-modern {% if current_page == 1 %}disabled{% endif %}">
-                <a class="page-link-modern" href="{{ url_for('public_dashboard', page=current_page-1) }}"
-                    aria-label="Previous">
-                    <i class="bi bi-chevron-left"></i>
-                </a>
-            </li>
+    <div class="row g-5">
+        <!-- Main Content: Latest Cases -->
+        <div class="col-lg-12">
+            <!-- Search and Filters -->
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <!-- Search Input -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-muted small">
+                                <i class="bi bi-search me-1"></i> {{ t.search_placeholder }}
+                            </label>
+                            <input type="text" id="searchInput" class="form-control"
+                                placeholder="{{ t.search_placeholder }}">
+                        </div>
 
-            {% for p in pagination_iter %}
-            {% if p %}
-            <li class="page-item-modern {% if p == current_page %}active{% endif %}">
-                <a class="page-link-modern" href="{{ url_for('public_dashboard', page=p) }}">{{ p }}</a>
-            </li>
+                        <!-- Status Filter -->
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold text-muted small">{{ t.status }}</label>
+                            <select id="statusFilter" class="form-select">
+                                <option value="">{{ t.all_statuses }}</option>
+                                <option value="Urgent">{{ t.get('Urgent', 'Urgent') }}</option>
+                                <option value="En cours">{{ t.get('En cours', 'En cours') }}</option>
+                                <option value="Résolu">{{ t.get('Résolu', 'Résolu') }}</option>
+                            </select>
+                        </div>
+
+                        <!-- ONG Filter -->
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-muted small">{{ t.ngos }}</label>
+                            <select id="ongFilter" class="form-select">
+                                <option value="">{{ t.all_ongs_filter }}</option>
+                                {% for ong in all_ongs %}
+                                <option value="{{ ong.id_ong }}">{{ ong.nom_ong }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Domain Filter -->
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold text-muted small">{{ t.domain }}</label>
+                            <select id="domainFilter" class="form-select">
+                                <option value="">{{ t.all_domains }}</option>
+                                {% for category in categories %}
+                                <option value="{{ category.nomCategorie }}">{{ t.get(category.nomCategorie,
+                                    category.nomCategorie) }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Clear Button -->
+                        <div class="col-md-1">
+                            <button id="clearFilters" class="btn btn-outline-secondary w-100"
+                                title="{{ t.clear_filters }}">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Results Count -->
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <span id="resultsCount"></span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold m-0"><i class="bi bi-grid-fill me-2 text-primary"></i>{{ t.latest_cases }}</h3>
+            </div>
+
+            {% if all_cases %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="casesContainer">
+                {% for case in all_cases %}
+                <div class="col case-card-wrapper" data-title="{{ case.titre|lower }}"
+                    data-description="{{ case.description|lower }}" data-status="{{ case.statut }}"
+                    data-ong-id="{{ case.id_ong }}" data-ong-name="{{ case.nom_ong|lower }}"
+                    data-domain="{{ case.domaine_intervation if case.domaine_intervation else '' }}">
+                    <div class="card h-100">
+                        <a href="{{ url_for('public_case_details', id=case.id_cas_social) }}"
+                            class="text-decoration-none">
+                            <div class="position-relative">
+                                {% if case.file_url %}
+                                {% if case.file_url.endswith(('.mp4', '.mov', '.avi')) %}
+                                <div class="bg-light d-flex align-items-center justify-content-center text-muted"
+                                    style="height: 220px;">
+                                    <i class="bi bi-play-circle-fill fs-1 text-white"
+                                        style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));"></i>
+                                </div>
+                                {% else %}
+                                <img src="{{ url_for('static', filename=case.file_url) }}" class="card-img-top"
+                                    alt="{{ case.titre }}" style="height: 220px; object-fit: cover;">
+                                {% endif %}
+                                {% else %}
+                                <div class="bg-light d-flex align-items-center justify-content-center text-muted"
+                                    style="height: 220px; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);">
+                                    <i class="bi bi-image fs-1 opacity-25"></i>
+                                </div>
+                                {% endif %}
+
+                                <span class="badge position-absolute top-0 end-0 m-3 shadow-sm 
+                                    {% if case.statut == 'Résolu' %}bg-success
+                                    {% elif case.statut == 'Urgent' %}bg-danger
+                                    {% else %}bg-primary{% endif %}">
+                                    {{ t.get(case.statut, case.statut) }}
+                                </span>
+                            </div>
+                        </a>
+
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex align-items-center mb-3">
+                                {% if case.logo_url %}
+                                <img src="{{ url_for('static', filename=case.logo_url) }}"
+                                    class="rounded-circle me-2 shadow-sm"
+                                    style="width: 32px; height: 32px; object-fit: cover;">
+                                {% else %}
+                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2 shadow-sm"
+                                    style="width: 32px; height: 32px;">
+                                    <i class="bi bi-building text-muted small"></i>
+                                </div>
+                                {% endif %}
+                                <small class="text-muted fw-bold">{{ case.nom_ong }}</small>
+                            </div>
+
+                            <a href="{{ url_for('public_case_details', id=case.id_cas_social) }}"
+                                class="text-decoration-none text-dark">
+                                <h5 class="card-title fw-bold mb-2">{{ case.titre }}</h5>
+                            </a>
+                            <p class="card-text text-muted small text-truncate-3 flex-grow-1">{{ case.description }}</p>
+
+                            <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                                <small class="text-muted"><i class="bi bi-clock me-1"></i> {{ case.date_publication
+                                    }}</small>
+                                <a href="{{ url_for('public_case_details', id=case.id_cas_social) }}"
+                                    class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                    {{ t.view_details }} <i
+                                        class="bi {% if lang == 'ar' %}bi-arrow-left{% else %}bi-arrow-right{% endif %} ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Client-side Pagination Controls -->
+            <div id="paginationControls" class="mt-5"></div>
+
+            <!-- No Results Found -->
+            <div id="noResults" class="text-center py-5" style="display: none;">
+                <div class="mb-3">
+                    <i class="bi bi-search fs-1 text-muted opacity-25"></i>
+                </div>
+                <h4 class="text-muted">{{ t.no_results_found }}</h4>
+                <p class="text-muted">{{ t.get('try_different_filters', 'Essayez différents filtres') }}</p>
+            </div>
+
             {% else %}
-            <li class="page-item-modern disabled">
-                <span class="page-ellipsis">...</span>
-            </li>
+            <div class="text-center py-5">
+                <div class="mb-3">
+                    <i class="bi bi-inbox fs-1 text-muted opacity-25"></i>
+                </div>
+                <h4 class="text-muted">{{ t.no_records }}</h4>
+            </div>
             {% endif %}
-            {% endfor %}
-
-            <!-- Next -->
-            <li class="page-item-modern {% if current_page == total_pages %}disabled{% endif %}">
-                <a class="page-link-modern" href="{{ url_for('public_dashboard', page=current_page+1) }}"
-                    aria-label="Next">
-                    <i class="bi bi-chevron-right"></i>
-                </a>
-            </li>
-        </ul>
-    </nav>
-    {% endif %}
-
-    {% else %}
-    <div class="text-center py-5">
-        <i class="bi bi-inbox fs-1 text-muted opacity-25 d-block mb-3"></i>
-        <h3 class="text-muted">{{ t.no_records }}</h3>
+        </div>
     </div>
-    {% endif %}
+
+    <!-- Partner ONGs (Logo Strip) -->
+    <div class="mt-5 pt-5 border-top">
+        <h5 class="text-muted text-uppercase fw-bold mb-4 text-center">{{ t.validated_ongs }}</h5>
+        <div class="row row-cols-3 row-cols-md-6 g-4 justify-content-center align-items-center opacity-75">
+            {% for ong in ongs %}
+            <div class="col text-center">
+                <a href="{{ url_for('detail_ong', id=ong.id_ong) }}" class="text-decoration-none">
+                    {% if ong.logo_url %}
+                    <img src="{{ url_for('static', filename=ong.logo_url) }}"
+                        class="rounded-circle grayscale-hover transition-all"
+                        style="width: 60px; height: 60px; object-fit: cover;" title="{{ ong.nom_ong }}"
+                        data-bs-toggle="tooltip">
+                    {% else %}
+                    <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center grayscale-hover transition-all"
+                        style="width: 60px; height: 60px;">
+                        <i class="bi bi-building text-muted fs-4"></i>
+                    </div>
+                    {% endif %}
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
 </div>
+
+<style>
+    .grayscale-hover {
+        filter: grayscale(100%);
+        opacity: 0.7;
+    }
+
+    .grayscale-hover:hover {
+        filter: grayscale(0%);
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    /* Fade-in animation for filtered cards */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .fade-in {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    [dir="rtl"] .ms-auto {
+        margin-right: auto !important;
+        margin-left: 0 !important;
+    }
+</style>
+
+<script src="{{ url_for('static', filename='js/search-filter.js') }}"></script>
 {% endblock %}

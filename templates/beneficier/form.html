@@ -10,6 +10,7 @@
             </div>
             <div class="card-body p-4">
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="row">
                         <div class="col-md-6 mb-4">
                             <label for="prenom" class="form-label">{{ t.first_name }}</label>

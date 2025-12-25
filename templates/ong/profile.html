@@ -18,22 +18,22 @@
                     {% endif %}
                 </div>
                 <div class="col-md-9">
-                    <h1 class="ong-name">{{ ong.nom_ong }}</h1>
-                    <div class="domain-badges mt-3">
+                    <h1 class="display-5 fw-bold mb-3">{{ ong.nom_ong }}</h1>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
                         {% if ong.domaine_intervation %}
                         {% for domain in ong.domaine_intervation.split(',') %}
-                        <span class="domain-badge domain-{{ loop.index }}">
+                        <span class="domain-badge">
                             <i class="bi bi-check-circle-fill me-1"></i>
                             {{ t.get(domain.strip(), domain.strip()) }}
                         </span>
                         {% endfor %}
                         {% endif %}
                     </div>
-                    <div class="ong-contact mt-3">
-                        <span class="contact-info me-4">
+                    <div class="d-flex flex-wrap gap-4 mt-3" style="color: rgba(255,255,255,0.9);">
+                        <span>
                             <i class="bi bi-envelope me-1"></i> {{ ong.email }}
                         </span>
-                        <span class="contact-info">
+                        <span>
                             <i class="bi bi-telephone me-1"></i> {{ ong.telephone }}
                         </span>
                     </div>
@@ -44,97 +44,119 @@
 
     <!-- Stats Section -->
     <div class="container mt-4">
-        <div class="row g-4">
+        <div class="row g-4 mb-5">
             <div class="col-md-4">
-                <div class="stat-card stat-total">
-                    <div class="stat-icon">
-                        <i class="bi bi-folder"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>{{ total_cases }}</h3>
-                        <p>{{ t.total_cases }}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-card stat-urgent">
-                    <div class="stat-icon">
-                        <i class="bi bi-exclamation-triangle"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>{{ urgent_cases }}</h3>
-                        <p>{{ t.urgent_cases }}</p>
+                <div class="modern-stat-card stat-primary">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <div class="stat-value">{{ total_cases }}</div>
+                            <div class="stat-label">{{ t.total_cases }}</div>
+                        </div>
+                        <div class="stat-icon-wrapper ms-auto">
+                            <i class="bi bi-folder-fill"></i>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="stat-card stat-resolved">
-                    <div class="stat-icon">
-                        <i class="bi bi-check-circle"></i>
+                <div class="modern-stat-card stat-warning">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <div class="stat-value">{{ urgent_cases }}</div>
+                            <div class="stat-label">{{ t.urgent_cases }}</div>
+                        </div>
+                        <div class="stat-icon-wrapper ms-auto">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        </div>
                     </div>
-                    <div class="stat-info">
-                        <h3>{{ resolved_cases }}</h3>
-                        <p>{{ t.resolved_cases }}</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="modern-stat-card stat-success">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <div class="stat-value">{{ resolved_cases }}</div>
+                            <div class="stat-label">{{ t.resolved_cases }}</div>
+                        </div>
+                        <div class="stat-icon-wrapper ms-auto">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Cases Section -->
-    <div class="container mt-5">
-        <div class="section-header d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="bi bi-grid me-2"></i>{{ t.my_cases }}</h2>
-        </div>
-
-        {% if cases %}
-        <div class="cases-grid">
-            {% for case in cases %}
-            <div class="case-card" data-href="{{ url_for('ong_case_details', id=case.id_cas_social) }}">
-
-                <div class="case-status-badge status-{{ case.statut|replace(' ', '_')|lower }}">
-                    {{ t.get(case.statut, case.statut) }}
-                </div>
-
-                <!-- Case Image -->
-                <div class="case-image">
-                    {% if case.first_image %}
-                    <img src="{{ url_for('static', filename=case.first_image) }}" alt="{{ case.titre }}">
-                    {% else %}
-                    <div class="case-image-placeholder">
-                        <i class="bi bi-image"></i>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <div class="case-card-body">
-                    <h4 class="case-title">{{ case.titre }}</h4>
-                    <p class="case-description">{{ case.description[:100] }}...</p>
-                    <div class="case-meta">
-                        <span><i class="bi bi-geo-alt"></i> {{ case.adresse }}</span>
-                        <span><i class="bi bi-calendar"></i> {{ case.date_publication }}</span>
-                    </div>
-                </div>
-                <div class="case-card-footer">
-                    <a href="{{ url_for('ong_case_details', id=case.id_cas_social) }}" class="btn-view-details">
-                        {{ t.view_details }} <i class="bi bi-arrow-right"></i>
-                    </a>
-                </div>
+        <!-- Cases Section -->
+        <div class="mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-grid-fill me-2 text-primary"></i>{{ t.my_cases }}</h2>
             </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="empty-state">
-            <div class="empty-icon">
-                <i class="bi bi-inbox"></i>
+
+            {% if cases %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for case in cases %}
+                <div class="col">
+                    <div class="card h-100">
+                        <a href="{{ url_for('ong_case_details', id=case.id_cas_social) }}" class="text-decoration-none">
+                            <div class="position-relative">
+                                {% if case.first_image %}
+                                <img src="{{ url_for('static', filename=case.first_image) }}" alt="{{ case.titre }}"
+                                    class="card-img-top" style="height: 200px; object-fit: cover;">
+                                {% else %}
+                                <div class="bg-light d-flex align-items-center justify-content-center"
+                                    style="height: 200px; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);">
+                                    <i class="bi bi-image fs-1 opacity-25"></i>
+                                </div>
+                                {% endif %}
+
+                                <span class="badge position-absolute top-0 end-0 m-3 shadow-sm 
+                                    {% if case.statut == 'Résolu' %}bg-success
+                                    {% elif case.statut == 'Urgent' %}bg-danger
+                                    {% else %}bg-primary{% endif %}">
+                                    {{ t.get(case.statut, case.statut) }}
+                                </span>
+                            </div>
+                        </a>
+
+                        <div class="card-body d-flex flex-column">
+                            <a href="{{ url_for('ong_case_details', id=case.id_cas_social) }}"
+                                class="text-decoration-none text-dark">
+                                <h5 class="card-title fw-bold mb-2">{{ case.titre }}</h5>
+                            </a>
+                            <p class="card-text text-muted small flex-grow-1">{{ case.description[:100] }}...</p>
+
+                            <div class="d-flex flex-column gap-2 mt-3 pt-3 border-top">
+                                <small class="text-muted">
+                                    <i class="bi bi-geo-alt me-1"></i> {{ case.adresse }}
+                                </small>
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar me-1"></i> {{ case.date_publication }}
+                                </small>
+                            </div>
+
+                            <a href="{{ url_for('ong_case_details', id=case.id_cas_social) }}"
+                                class="btn btn-outline-primary btn-sm rounded-pill mt-3">
+                                {{ t.view_details }} <i
+                                    class="bi {% if lang == 'ar' %}bi-arrow-left{% else %}bi-arrow-right{% endif %} ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
-            <h3>{{ t.no_cases }}</h3>
-            <p>{{ t.start_adding }}</p>
-            <a href="{{ url_for('add_case') }}" class="btn btn-primary btn-lg mt-3">
-                <i class="bi bi-plus-circle me-2"></i>{{ t.add_case }}
-            </a>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <i class="bi bi-inbox fs-1 text-muted opacity-25"></i>
+                </div>
+                <h3 class="text-muted mb-2">{{ t.no_cases }}</h3>
+                <p class="text-muted mb-4">{{ t.start_adding }}</p>
+                <a href="{{ url_for('add_case') }}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-plus-circle me-2"></i>{{ t.add_case }}
+                </a>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 </div>
 
@@ -145,341 +167,12 @@
 </a>
 {% endif %}
 
-<style>
-    /* Profile Hero */
-    .profile-hero {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 3rem 0;
-        color: white;
-        margin: -2rem -15px 0;
-        box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
-    }
-
-    .ong-logo-large {
-        width: 150px;
-        height: 150px;
-        border-radius: 50%;
-        border: 5px solid white;
-        object-fit: cover;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    }
-
-    .ong-logo-placeholder {
-        width: 150px;
-        height: 150px;
-        border-radius: 50%;
-        border: 5px solid white;
-        background: rgba(255, 255, 255, 0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 60px;
-        margin: 0 auto;
-    }
-
-    .ong-name {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
-
-    .domain-badges {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-    }
-
-    .domain-badge {
-        padding: 0.5rem 1rem;
-        border-radius: 50px;
-        background: rgba(255, 255, 255, 0.25);
-        backdrop-filter: blur(10px);
-        font-weight: 500;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        transition: all 0.3s ease;
-    }
-
-    .domain-badge:hover {
-        background: rgba(255, 255, 255, 0.35);
-        transform: translateY(-2px);
-    }
-
-    .contact-info {
-        color: rgba(255, 255, 255, 0.9);
-    }
-
-    /* Stats Cards */
-    .stat-card {
-        background: white;
-        border-radius: 1rem;
-        padding: 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 1.5rem;
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-        transition: all 0.3s ease;
-        cursor: pointer;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-    }
-
-    .stat-icon {
-        width: 70px;
-        height: 70px;
-        border-radius: 1rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2rem;
-        color: white;
-    }
-
-    .stat-total .stat-icon {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-
-    .stat-urgent .stat-icon {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
-
-    .stat-resolved .stat-icon {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    }
-
-    .stat-info h3 {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin: 0;
-        color: #2d3748;
-    }
-
-    .stat-info p {
-        margin: 0;
-        color: #718096;
-        font-weight: 500;
-    }
-
-    /* Cases Grid */
-    .section-header h2 {
-        color: #2d3748;
-        font-weight: 700;
-    }
-
-    .cases-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 2rem;
-        margin-bottom: 3rem;
-    }
-
-    .case-card {
-        background: white;
-        border-radius: 1rem;
-        overflow: hidden;
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-        transition: all 0.3s ease;
-        cursor: pointer;
-        position: relative;
-    }
-
-    .case-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
-    }
-
-    .case-status-badge {
-        position: absolute;
-        top: 1rem;
-        right: 1rem;
-        padding: 0.4rem 1rem;
-        border-radius: 50px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        z-index: 10;
-    }
-
-    .status-urgent {
-        background: #fee;
-        color: #c00;
-    }
-
-    .status-en_cours {
-        background: #e3f2fd;
-        color: #1976d2;
-    }
-
-    .status-résolu {
-        background: #e8f5e9;
-        color: #388e3c;
-    }
-
-    .case-card-body {
-        padding: 1.5rem;
-    }
-
-    .case-image {
-        width: 100%;
-        height: 200px;
-        overflow: hidden;
-        background: #f7fafc;
-    }
-
-    .case-image img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.3s ease;
-    }
-
-    .case-card:hover .case-image img {
-        transform: scale(1.05);
-    }
-
-    .case-image-placeholder {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
-        color: #a0aec0;
-        font-size: 4rem;
-    }
-
-
-    .case-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #2d3748;
-        margin-bottom: 0.75rem;
-    }
-
-    .case-description {
-        color: #718096;
-        margin-bottom: 1rem;
-    }
-
-    .case-meta {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        font-size: 0.9rem;
-        color: #a0aec0;
-    }
-
-    .case-card-footer {
-        padding: 1rem 1.5rem;
-        background: #f7fafc;
-        border-top: 1px solid #e2e8f0;
-    }
-
-    .btn-view-details {
-        color: #667eea;
-        text-decoration: none;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-
-    .btn-view-details:hover {
-        color: #764ba2;
-    }
-
-    /* Empty State */
-    .empty-state {
-        text-align: center;
-        padding: 4rem 2rem;
-    }
-
-    .empty-icon {
-        font-size: 5rem;
-        color: #cbd5e0;
-        margin-bottom: 1rem;
-    }
-
-    .empty-state h3 {
-        color: #2d3748;
-        margin-bottom: 0.5rem;
-    }
-
-    .empty-state p {
-        color: #718096;
-        margin-bottom: 1.5rem;
-    }
-
-    /* Floating Action Button */
-    .fab {
-        position: fixed;
-        bottom: 2rem;
-        right: 2rem;
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-        transition: all 0.3s ease;
-        text-decoration: none;
-        z-index: 1000;
-    }
-
-    .fab:hover {
-        transform: scale(1.1) rotate(90deg);
-        box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
-        color: white;
-    }
-
-    /* RTL Support */
-    [dir="rtl"] .domain-badge i,
-    [dir="rtl"] .contact-info i,
-    [dir="rtl"] .case-meta i {
-        margin-right: 0;
-        margin-left: 0.5rem;
-    }
-
-    [dir="rtl"] .fab {
-        right: auto;
-        left: 2rem;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-        .ong-name {
-            font-size: 1.75rem;
-            margin-top: 1rem;
-        }
-
-        .cases-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .ong-logo-large,
-        .ong-logo-placeholder {
-            width: 120px;
-            height: 120px;
-        }
-    }
-</style>
-
 <script>
     // Initialize tooltips
     document.addEventListener('DOMContentLoaded', function () {
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-
-        // Add click handlers for case cards
-        document.querySelectorAll('.case-card[data-href]').forEach(function (card) {
-            card.addEventListener('click', function () {
-                window.location.href = this.dataset.href;
-            });
         });
     });
 </script>

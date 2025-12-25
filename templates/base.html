@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ t.title }}</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <!-- Bootstrap CSS -->
     {% if lang == 'ar' %}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
@@ -246,11 +247,13 @@
 
     <!-- Hidden form for POST requests (Delete/Admin Action) -->
     <form id="deleteForm" method="POST" style="display:none;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="password" id="deletePassword">
     </form>
 
     <!-- Hidden form for Admin POST requests -->
     <form id="adminActionForm" method="POST" style="display:none;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="email" id="formAdminEmail">
         <input type="hidden" name="password" id="formAdminPassword">
     </form>
@@ -301,6 +304,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify({ ong_id: ongId, password: password })
                 })
@@ -336,7 +340,10 @@
             // Verify Admin Creds first via API
             fetch("{{ url_for('verify_admin_credentials') }}", {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
                 body: JSON.stringify({ email: email, password: password })
             })
                 .then(res => res.json())

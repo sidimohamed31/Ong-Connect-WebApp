@@ -15,6 +15,7 @@
                 </div>
 
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="form-floating mb-3">
                         <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com"
                             required>
@@ -34,6 +35,11 @@
                 <div class="text-center mt-4">
                     <span class="text-muted">{{ t.no_account }}</span>
                     <a href="{{ url_for('add_ong') }}" class="fw-bold text-decoration-none">{{ t.register_now }}</a>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('forgot_password') }}" class="text-muted small text-decoration-none">
+                        {{ t.get('forgot_password', 'Mot de passe oublié ?') }}
+                    </a>
                 </div>
             </div>
         </div>

@@ -10,7 +10,8 @@
             </div>
             <div class="card-body p-4">
                 <form method="POST">
-                    <div class="mb-4">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
                         <label for="nom" class="form-label">{{ t.name }}</label>
                         <input type="text" class="form-control form-control-lg" id="nom" name="nom"
                             value="{{ admin.nom if admin else '' }}" required placeholder="{{ t.name }}...">
